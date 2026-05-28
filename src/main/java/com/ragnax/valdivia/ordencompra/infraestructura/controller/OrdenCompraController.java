@@ -1,6 +1,7 @@
 package com.ragnax.valdivia.ordencompra.infraestructura.controller;
 
 import com.ragnax.valdivia.ordencompra.application.service.*;
+import com.ragnax.valdivia.ordencompra.application.service.model.DocumentoOrdenCompra;
 import com.ragnax.valdivia.ordencompra.infraestructura.controller.dto.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -8,7 +9,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -162,6 +165,31 @@ public class OrdenCompraController {
                 ordenCompraService.confirmar(req.getCodOc(), req.getPlantillaDTO(), req.getUsuarioSup()));
     }
 
+    /** PATCH /api/ordenes-compra/{id}/confirmar */
+    @PostMapping("/ordenes-compra/generar-documento-oc")
+    public ResponseEntity<byte[]> generarDocumentoOc(
+            @RequestBody OrdenCompraRequest req) throws Exception {
+
+            DocumentoOrdenCompra documentoOrdenCompra =
+                    ordenCompraService.generarDocumentoOc(req.getCodOc(), req.getPlantillaDTO());
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            String filename = "";
+            if(documentoOrdenCompra.getCodEstadoOc().equals("anulado")){
+                 filename = "OC_Anulada_" + req.getCodOc() + ".pdf";
+            }else if(documentoOrdenCompra.getCodEstadoOc().equals("confirmada")){
+                 filename = "OC_Confirmada_" + req.getCodOc() + ".pdf";
+            }else {
+                throw new Exception("Documento no encontrado");
+            }
+            headers.setContentDispositionFormData("attachment", filename);
+            headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
+
+            return new ResponseEntity<>(documentoOrdenCompra.getDocByte(), headers, HttpStatus.OK);
+
+    }
+
     // ══════════════════════════════════════════════
     //  LISTADOS POR ESTADO ACTUAL
     // ══════════════════════════════════════════════
@@ -189,11 +217,12 @@ public class OrdenCompraController {
                 @RequestParam(required = false) String rut,
                 @RequestParam(required = false) String unidad,
                 @RequestParam(required = false) String codOrdenCompra,
-                @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
+                @RequestParam(required = false) String fechaInicioStr,
+                @RequestParam(required = false) String fechaFinStr,
                 @PageableDefault(size = 10, sort = "idOrdenCompra") Pageable pageable
     ) {
             Page<PlantillaStatusDTO> resultados = ordenCompraService.realizarBusquedaAvanzada(
-                    codEstadoOc, rut, unidad, codOrdenCompra, fecha, pageable
+                    codEstadoOc, rut, unidad, codOrdenCompra, fechaInicioStr, fechaFinStr, pageable
             );
             //return   ResponseEntity.ok(null);
             return ResponseEntity.ok(resultados);

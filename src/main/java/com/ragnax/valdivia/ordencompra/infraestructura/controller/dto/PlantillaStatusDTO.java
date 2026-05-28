@@ -1,5 +1,6 @@
 package com.ragnax.valdivia.ordencompra.infraestructura.controller.dto;
 
+import jakarta.persistence.Column;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -21,14 +22,13 @@ public class PlantillaStatusDTO extends PlantillaDTO {
     private String emailProveedor;
     private String codRegionProveedor;
     private String codComunaProveedor;
+    private String nombreRegionProveedor;
+    private String nombreComunaProveedor;
 
     //private Integer idDocumentoElectronico;
     //private String nombreDocumentoElectronico;
     private String descripcionDocumentoElectronico;
     private String impuestoDocumentoElectronico;
 
-    //private String estado;
-    //private String codEstadoActualOc;
-    //private String estadoActualOc;
 
 }

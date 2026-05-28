@@ -29,14 +29,16 @@ public interface OrdenCompraRepository extends JpaRepository<OrdenCompra, Intege
             //"AND (:nombreProv IS NULL OR UPPER(p.nombreProveedor) LIKE UPPER(CONCAT('%', :nombreProv, '%'))) " +
             "AND (:unidadId IS NULL OR oc.idUnidad = :unidadId) " +
             "AND (:codOrdenCompra IS NULL OR oc.codigoOrdenCompra LIKE CONCAT('%', :codOrdenCompra, '%')) " +
-            "AND (:fecha IS NULL OR CAST(oc.fechaCreacion AS date) = :fecha)")
+            "AND (:fechaInicio IS NULL OR CAST(oc.fechaCreacion AS date) >= :fechaInicio) " +
+            "AND (:fechaFin IS NULL OR CAST(oc.fechaCreacion AS date) <= :fechaFin)")
     Page<OrdenCompra> buscarAvanzado(
             @Param("idStatus") Integer idStatus,
             @Param("rut") String rut,
          //   @Param("nombreProv") String nombreProv,
             @Param("unidadId") Integer unidadId,
             @Param("codOrdenCompra") String codOrdenCompra,
-            @Param("fecha") LocalDate fecha,
+            @Param("fechaInicio") LocalDate fechaInicio,
+            @Param("fechaFin") LocalDate fechaFin,
             Pageable pageable
     );
 

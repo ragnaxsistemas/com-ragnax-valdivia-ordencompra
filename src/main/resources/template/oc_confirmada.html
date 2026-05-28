@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orden de Compra - CCM Valdivia</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+            line-height: 1.4;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .oc-container {
+            max-width: 850px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 40px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-top: 8px solid #f2a900; /* Color naranja corporativo aproximado */
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .logo-section {
+            text-align: center;
+            width: 250px;
+        }
+
+        .logo-placeholder {
+            font-weight: bold;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .logo-text {
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .oc-info {
+            text-align: right;
+        }
+
+        .oc-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #000;
+            margin: 0;
+        }
+
+        .oc-number {
+            color: #d32f2f;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .section-title {
+            background-color: #eeeeee;
+            padding: 5px 10px;
+            font-weight: bold;
+            margin-top: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: 120px 1fr 120px 1fr;
+            gap: 10px;
+            padding: 15px 10px;
+            font-size: 13px;
+        }
+
+        .label {
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th {
+            background-color: #f8f8f8;
+            border: 1px solid #ccc;
+            padding: 8px;
+            font-size: 12px;
+            text-align: left;
+        }
+
+        td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            font-size: 12px;
+        }
+
+        .totals-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 10px;
+        }
+
+        .totals-table {
+            width: 250px;
+        }
+
+        .totals-table td {
+            font-weight: bold;
+        }
+
+        /* AJUSTE DE SEPARACIÓN AQUÍ */
+        .observations-container {
+            margin-top: 5px; /* Separación mínima con el título */
+        }
+
+        .observations-textarea {
+            width: 100%;
+            height: 80px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            resize: none;
+            box-sizing: border-box; /* Asegura que el padding no agrande el ancho */
+            display: block;
+        }
+
+        /* ESTILOS PARA LA NUEVA SECCIÓN CUÁDRUPLE */
+        .cuadruple-container {
+            display: flex;
+            border: 1px solid #ccc; /* Borde negro más definido como en la imagen */
+            margin-top: 20px;
+            height: 80px; /* Altura suficiente para las firmas */
+        }
+
+        .cuadruple-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end; /* Empuja el texto al fondo */
+            border-right: 1px solid #ccc;
+            text-align: center;
+        }
+
+        .cuadruple-item:last-child {
+            border-right: none;
+        }
+
+        .item-label {
+            font-weight: bold;
+            font-size: 10px;
+            color: #000;
+            text-transform: uppercase;
+            padding: 4px 2px;
+            border-top: 1px solid #ccc; /* La línea que separa el espacio de firma del texto */
+            background-color: #fff; /* Fondo blanco para el texto */
+        }
+
+        .footer {
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+            text-align: center;
+            font-size: 11px;
+            color: #666;
+        }
+
+        .footer p {
+            margin: 3px 0;
+        }
+
+        /* Estilo para simular las manchas de colores del logo */
+        .color-bars {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        .bar {
+            width: 40px;
+            height: 60px;
+            opacity: 0.8;
+        }
+        .orange { background-color: #f2a900; }
+        .pink { background-color: #e6007e; }
+        .blue { background-color: #00aeef; }
+    </style>
+</head>
+<body>
+
+<div class="oc-container">
+    <div class="header">
+        <div class="logo-section">
+            ${LOGO_OC_CCM}
+        </div>
+        <div class="oc-info">
+            <h1 class="oc-title">ORDEN DE COMPRA</h1>
+            <div class="oc-number">{{FOLIO_OC}}</div>
+            <p style="font-size: 13px; margin-top: 10px;">
+                <strong>Fecha:</strong> {{FECHA_CREACION_OC}}<br>
+                <strong>Unidad compradora:</strong> {{UNIDAD_COMPRADORA_OC}}<br>
+                <strong>Autorizado por:</strong> {{AUTORIZADOR_OC}}
+                <strong>Confirmada por:</strong> {{CONFIRMADOR_OC}}
+            </p>
+        </div>
+    </div>
+
+    <div class="section-title">DATOS DEL PROVEEDOR</div>
+    <div class="grid-container">
+        <div class="label">Proveedor:</div>
+        <div>{{NOMBRE_PROVEEDOR_OC}}</div>
+        <div class="label">RUT:</div>
+        <div>{{RUT_PROVEEDOR_OC}}</div>
+
+        <div class="label">Dirección:</div>
+        <div>{{DIRECCION_PROVEEDOR_OC}}</div>
+        <div class="label">Comuna:</div>
+        <div>{{COMUNA_PROVEEDOR_OC}}</div>
+
+        <div class="label">Región:</div>
+        <div>{{REGION_PROVEEDOR_OC}}</div>
+        <div class="label">Giro:</div>
+        <div>{{GIRO_PROVEEDOR_OC}}</div>
+
+        <div class="label">Fono:</div>
+        <div>{{FONO_PROVEEDOR_OC}}</div>
+        <div class="label">Email:</div>
+        <div>{{EMAIL_PROVEEDOR_OC}}</div>
+
+        <div class="label">Nombre de la OC:</div>
+        <div>{{NOMBRE_OC}}</div>
+        <div class="label">Condiciones de Pago:</div>
+        <div>CREDITO A 30 DIAS</div>
+    </div>
+
+    <table>
+        <thead>
+        <tr>
+            <th style="width: 30px;">N°</th>
+            <th>Descripción</th>
+            <th style="width: 60px;">Cantidad</th>
+            <th style="width: 100px;">Valor Unitario</th>
+            <th style="width: 100px;">Valor Total</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{TABLA_PRODUCTOS_OC}}
+        </tbody>
+    </table>
+
+    <div class="totals-container">
+        <table class="totals-table">
+            <tr>
+                <td style="background-color: #f8f8f8;">{{TITULO_TOTAL_NETO_OC}}</td>
+                <td>{{VALOR_TOTAL_NETO_OC}}</td>
+            </tr>
+            <tr>
+                <td style="background-color: #f8f8f8;">{{TITULO_IMPUESTO_OC}}</td>
+                <td>{{VALOR_IMPUESTO_OC}}</td>
+            </tr>
+            <tr>
+                <td style="background-color: #eee;">{{TITULO_TOTAL_OC}}</td>
+                <td>{{VALOR_TOTAL_OC}}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section-title">OBSERVACIONES</div>
+    <div class="observations-container">
+        <textarea
+                class="observations-textarea"
+        >{{OBSERVACIONES_OC}}</textarea>
+    </div>
+
+    <div class="cuadruple-container">
+        <div class="cuadruple-item">
+            <span class="item-label">UNIDAD DE COMPRAS</span>
+        </div>
+        <div class="cuadruple-item">
+            <span class="item-label">CONTABILIDAD Y FINANZAS</span>
+        </div>
+        <div class="cuadruple-item">
+            <span class="item-label">GERENCIA</span>
+        </div>
+        <div class="cuadruple-item">
+            <span class="item-label">UNIDAD REQUIRENTE</span>
+        </div>
+    </div>
+    <div class="footer">
+        <p><strong>Avenida Los Robles Número 4, Isla Teja. Valdivia - Región de Los Ríos - Chile</strong></p>
+        <p>Horario de atención: lunes a viernes de 10:00 a 18:00 horas.</p>
+        <p>www.ccm-valdivia.cl | Fono +(56) 63 2 236906 | contacto@ccm-valdivia.cl</p>
+    </div>
+</div>
+
+</body>
+</html>

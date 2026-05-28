@@ -60,6 +60,15 @@ public class OrdenCompra {
     @Column(name = "total")
     private Integer total;
 
+    @Column(name = "username_autorizador")
+    private String usernameAutorizador;
+
+    @Column(name = "username_anulador")
+    private String usernameAnulador;
+
+    @Column(name = "username_confirmador")
+    private String usernameConfirmador;
+
     @Column(name = "fecha_creacion", insertable = false, updatable = false)
     private LocalDateTime fechaCreacion;
 

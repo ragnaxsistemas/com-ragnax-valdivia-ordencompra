@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orden de Compra - CCM Valdivia</title>
+    <style>
+
+
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+            line-height: 1.4;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        /* Asegurar que el contenedor sea la referencia para la marca de agua */
+        .oc-container {
+            position: relative; /* Indispensable para que el "absolute" funcione */
+            max-width: 850px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 40px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-top: 8px solid #f2a900;
+        }
+
+        /* Marca de agua ajustada para impresión */
+        .watermark {
+            margin-top: 5px;
+            position: absolute; /* Cambiado de fixed a absolute */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 200px;
+            font-weight: bold;
+            color: rgba(153, 0, 0, 0.25); /* Un poco más claro para no tapar texto al imprimir */
+            border: 15px solid rgba(211, 47, 47, 0.15);
+            padding: 10px 40px;
+            text-transform: uppercase;
+            z-index: 100;
+            pointer-events: none;
+            white-space: nowrap;
+            border-radius: 20px;
+            user-select: none;
+        }
+
+        /* Forzar que se imprima el color de fondo y la marca de agua en PDF */
+        @media print {
+            .watermark {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 30px;
+        }
+
+        .logo-section {
+            text-align: center;
+            width: 250px;
+        }
+
+        .logo-placeholder {
+            font-weight: bold;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .logo-text {
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .oc-info {
+            text-align: right;
+        }
+
+        .oc-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #000;
+            margin: 0;
+        }
+
+        .oc-number {
+            color: #d32f2f;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .section-title {
+            background-color: #eeeeee;
+            padding: 5px 10px;
+            font-weight: bold;
+            margin-top: 20px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: 120px 1fr 120px 1fr;
+            gap: 10px;
+            padding: 15px 10px;
+            font-size: 13px;
+        }
+
+        .label {
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th {
+            background-color: #f8f8f8;
+            border: 1px solid #ccc;
+            padding: 8px;
+            font-size: 12px;
+            text-align: left;
+        }
+
+        td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            font-size: 12px;
+        }
+
+        .totals-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 10px;
+        }
+
+        .totals-table {
+            width: 250px;
+        }
+
+        .totals-table td {
+            font-weight: bold;
+        }
+
+        /* AJUSTE DE SEPARACIÓN AQUÍ */
+        .observations-container {
+            margin-top: 5px; /* Separación mínima con el título */
+        }
+
+        .observations-textarea {
+            width: 100%;
+            height: 80px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            resize: none;
+            box-sizing: border-box; /* Asegura que el padding no agrande el ancho */
+            display: block;
+        }
+
+        /* ESTILOS PARA LA NUEVA SECCIÓN CUÁDRUPLE */
+        .cuadruple-container {
+            display: flex;
+            border: 1px solid #ccc; /* Borde negro más definido como en la imagen */
+            margin-top: 20px;
+            height: 80px; /* Altura suficiente para las firmas */
+        }
+
+        .cuadruple-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end; /* Empuja el texto al fondo */
+            border-right: 1px solid #ccc;
+            text-align: center;
+        }
+
+        .cuadruple-item:last-child {
+            border-right: none;
+        }
+
+        .item-label {
+            font-weight: bold;
+            font-size: 10px;
+            color: #000;
+            text-transform: uppercase;
+            padding: 4px 2px;
+            border-top: 1px solid #ccc; /* La línea que separa el espacio de firma del texto */
+            background-color: #fff; /* Fondo blanco para el texto */
+        }
+
+        .footer {
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+            text-align: center;
+            font-size: 11px;
+            color: #666;
+        }
+
+        .footer p {
+            margin: 3px 0;
+        }
+
+        /* Estilo para simular las manchas de colores del logo */
+        .color-bars {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        .bar {
+            width: 40px;
+            height: 60px;
+            opacity: 0.8;
+        }
+        .orange { background-color: #f2a900; }
+        .pink { background-color: #e6007e; }
+        .blue { background-color: #00aeef; }
+    </style>
+</head>
+<body>
+<div class="watermark">NULA</div>
+<div class="oc-container">
+    <div class="header">
+        <div class="logo-section">
+            ${LOGO_OC_CCM}
+        </div>
+        <div class="oc-info">
+            <h1 class="oc-title">ORDEN DE COMPRA</h1>
+            <div class="oc-number">xxXXXXXXX-2025</div>
+            <p style="font-size: 13px; margin-top: 10px;">
+                <strong>Fecha:</strong> dd mmmm aaaa<br>
+                <strong>Unidad compradora:</strong> [Nombre Unidad]<br>
+                <strong>Autorizado por:</strong> [Nombre Usuario]
+            </p>
+        </div>
+    </div>
+
+    <div class="section-title">DATOS DEL PROVEEDOR</div>
+    <div class="grid-container">
+        <div class="label">Proveedor:</div>
+        <div>[Nombre del Proveedor]</div>
+        <div class="label">RUT:</div>
+        <div>[12.345.678-9]</div>
+
+        <div class="label">Dirección:</div>
+        <div>[Calle y Número]</div>
+        <div class="label">Comuna:</div>
+        <div>[Comuna]</div>
+
+        <div class="label">Región:</div>
+        <div>[Región]</div>
+        <div class="label">Giro:</div>
+        <div>[Giro del Proveedor]</div>
+
+        <div class="label">Fono:</div>
+        <div>[Número de contacto]</div>
+        <div class="label">Email:</div>
+        <div>[correo@contacto.cl]</div>
+
+        <div class="label">Nombre de la OC:</div>
+        <div>[Titulo de los Servicios Requeridos]</div>
+        <div class="label">Condiciones de Pago:</div>
+        <div>CREDITO A 30 DIAS</div>
+    </div>
+
+    <table>
+        <thead>
+        <tr>
+            <th style="width: 30px;">N°</th>
+            <th style="width: 100px;">Código Ítem</th>
+            <th>Descripción</th>
+            <th style="width: 60px;">Cantidad</th>
+            <th style="width: 100px;">Valor Unitario</th>
+            <th style="width: 100px;">Valor Total</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>1</td>
+            <td>-</td>
+            <td>[Descripción del producto o servicio]</td>
+            <td>$ 0</td>
+            <td>0</td>
+            <td>$ 0</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div class="totals-container">
+        <table class="totals-table">
+            <tr>
+                <td style="background-color: #f8f8f8;">Total Neto</td>
+                <td>$ 0</td>
+            </tr>
+            <tr>
+                <td style="background-color: #f8f8f8;">Impuesto</td>
+                <td>$ 0</td>
+            </tr>
+            <tr>
+                <td style="background-color: #eee;">TOTAL</td>
+                <td>$ 0</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section-title">OBSERVACIONES</div>
+    <div class="observations-container">
+        <textarea
+                class="observations-textarea"
+                maxlength="500"
+                placeholder="Ingrese observaciones aquí... (Máx. 500 caracteres)"
+                oninput="document.getElementById('count').innerText = this.value.length"
+        ></textarea>
+    </div>
+
+    <div class="cuadruple-container">
+        <div class="cuadruple-item">
+            <span class="item-label">UNIDAD DE COMPRAS</span>
+        </div>
+        <div class="cuadruple-item">
+            <span class="item-label">CONTABILIDAD Y FINANZAS</span>
+        </div>
+        <div class="cuadruple-item">
+            <span class="item-label">GERENCIA</span>
+        </div>
+        <div class="cuadruple-item">
+            <span class="item-label">UNIDAD REQUIRENTE</span>
+        </div>
+    </div>
+    <div class="footer">
+        <p><strong>Avenida Los Robles Número 4, Isla Teja. Valdivia - Región de Los Ríos - Chile</strong></p>
+        <p>Horario de atención: lunes a viernes de 10:00 a 18:00 horas.</p>
+        <p>www.ccm-valdivia.cl | Fono +(56) 63 2 236906 | contacto@ccm-valdivia.cl</p>
+    </div>
+</div>
+
+</body>
+</html>

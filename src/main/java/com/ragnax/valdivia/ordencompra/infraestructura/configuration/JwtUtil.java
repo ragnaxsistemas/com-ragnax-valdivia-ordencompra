@@ -15,7 +15,6 @@ import java.util.Date;
 import java.util.Map;
 
 public class JwtUtil {
-
     @Bean
     public Jackson2ObjectMapperBuilderCustomizer customizer() {
         return builder -> builder.serializerByType(
@@ -76,4 +75,5 @@ public class JwtUtil {
         return new TokenResponse(token, expiresAt);
     }
 }
+
 

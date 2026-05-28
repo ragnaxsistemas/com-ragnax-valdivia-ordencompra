@@ -31,20 +31,6 @@ datasource:
   hikari:
     maximum-pool-size: 10
     minimum-idle: 5
-
-#spring:
-#  profiles:
-#    active: dev
-#  application:
-#    name: com-ragnax-valdivia-ordencompra
-#  datasource:
-#    url: jdbc:mysql://localhost:3306/valdivia_cultura_oc?useSSL=false
-#    username: root
-#    password: m3R0b0L4sT4s4sD3lTr4b4j0
-#    driver-class-name: com.mysql.cj.jdbc.Driver
-#    hikari:
-#      maximum-pool-size: 10
-#      minimum-idle: 5
   jpa:
     #    show-sql: true
     hibernate:
@@ -67,6 +53,12 @@ springdoc:
 
 server:
   port: 8888
+  servlet:
+    context-path: /ccmvaldivia
+    session:
+      cookie:
+        secure: true
+    forward-headers-strategy: native
 
 logging:
   file:
@@ -106,56 +98,10 @@ swagger:
 servicio:
   app:
     generarCartaNotificacion: generarCartaNotificacion
-    upload: upload
-    listar: listar/{tipo}
-    download: download/{tipo}/{carpeta}
-    sdownload: download/{tipo}/{carpeta}/{archivo}
 archivo:
-  excel:
-    nombreCarpetaUpload: public_sftp/1_upload/
-    nombreCarpetaNormalizada: public_sftp/4_normalizado/
-    #nombreArchivo: LIBRO_EJEMPLO_con50mil_corregido_2y.xlsx
-    #nombreArchivo: 16092025_BP.xlsx
-    #nombreHoja: Datos_corregidos_patente_infrac
-    nombreHojaCobranza: Hoja1
-    nombreHojaNotificacion: CITACION
-
   html:
     nombreCarpetaTemplate: templates/
-    nombreArchivoCobranzaIndividual: cartas/cobranza/cobranza_carta_individual.html
-    nombreArchivoCobranzaMasiva:   cartas/cobranza/cobranza_carta_masiva.html
-    #    nombreArchivoNotificacionIndividual: cartas/notificacion/notificacion_carta_individual_con_cupon.html
-    #    nombreArchivoNotificacionMasiva: cartas/notificacion/notificacion_carta_masiva.html
-    nombreArchivoNotificacionV2: cartas/notificacion/notificacion_carta_v2.html
-    nombreArchivoReporte: reportes/reporte.html
-    logoBciCupon:   logos/bci_cupon.png
-    logoFirma1Juzgado: logos/firma1Juzgado.png
-    logoFirma2Juzgado: logos/firma2Juzgado.png
-    logoFirmaTesoreria: logos/firmaTesoreria-DAF.jpg
-    logoEscudo:   logos/escudo-solo.png
-    logo: logos/LogoEsquinaSuperiorIzquierda.png
-
-  creacion:
-    carpeta: /Users/mac/Workspaces/WorkspaceSanBernardo/com-ragnax-sanbernardo-notificacion/src/main/resources/public_sftp/
-    respaldo: /Users/mac/Workspaces/WorkspaceSanBernardo/com-ragnax-sanbernardo-notificacion/src/main/resources/public_sftp/2_adjuntado/
-    respaldoNormalizado: /Users/mac/Workspaces/WorkspaceSanBernardo/com-ragnax-sanbernardo-notificacion/src/main/resources/public_sftp/5_procesado/
-    adjuntos:
-      subCarpetaDesnormalizado: 3_desnormalizado/
-      #subCarpetaDesnormalizadoDocumento: documento/
-      #subCarpetaDesnormalizadoCorreos: correos/
-      #subCarpetaNormalizado: 4_normalizado/
-      #subCarpetaNormalizadoDocumento: CARTAS/
-      #subCarpetaNormalizadoCorreos: correos/
-      #subCarpetaProcesado: 5_procesado/
-
-      subCarpetaCobranza: 6_cobranza/
-      subCarpetaCobranzaDocumento: CARTAS/
-      subCarpetaCobranzaConsolidado: CARTAS_CONSOLIDADAS/
-      subCarpetaCobranzaReporte: REPORTES/
-      subCarpetaNotificacion: 7_notificacion/
-      subCarpetaNotificacionDocumento: CARTAS/
-      subCarpetaNotificacionConsolidado: CARTAS_CONSOLIDADAS
-      subCarpetaNotificacionReporte: REPORTES/
-      nombreArchivoConsolidado: consolidado.pdf
-      nombreArchivoReporte: reporte.pdf
+    nombreHtmlConfirmada: oc_confirmada.html
+    nombreHtmlAnulada: oc_anulada.html
+    logoEscudo: logos/LogoEsquinaSuperiorIzquierda.png
 
