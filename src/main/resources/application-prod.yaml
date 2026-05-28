@@ -7,34 +7,47 @@ info:
     name: '@project.name@'
     version: '@project.version@'
 spring:
-  application:
-    name: com-ragnax-valdivia-ordencompra
-  # Configuración de Hikari (Global o específica)
-  maximum-pool-size: 10
-  minimum-idle: 5
+  config:
+    activate:
+      on-profile: prod
   jpa:
+    properties:
+      hibernate:
+        # Esto es vital para evitar el error de metadatos si una conexión tarda
+        temp.use_jdbc_metadata_defaults: false
+        dialect: org.hibernate.dialect.MariaDBDialect
+
+datasource:
+  # Base de datos actual (Orden de Compra)
+  primary:
+    jdbc-url: jdbc:mysql://localhost:3306/valdivia_cultura_oc?useSSL=false
+    username: root
+    password: m3R0b0L4sT4s4sD3lTr4b4j0
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # Nueva base de datos (Usuarios)
+  usuarios:
+    jdbc-url: jdbc:mysql://localhost:3306/ragnax_usuariov1?useSSL=false
+    username: root
+    password: m3R0b0L4sT4s4sD3lTr4b4j0
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # Configuración de Hikari (Global o específica)
+  hikari:
+    maximum-pool-size: 10
+    minimum-idle: 5
+  jpa:
+    #    show-sql: true
     hibernate:
       ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
   servlet:
     multipart:
-      max-file-size: 110MB
-      max-request-size: 110MB
-  mail:
-    host: smtp.resend.com
-    port: 465
-    username: resend
-    password: re_UNjdbpTp_GF4LZDirLGtHe9LDy2TojzhR
-    properties:
-      mail:
-        smtp:
-          auth: true
-          ssl:
-            enable: true
-          starttls:
-            enable: true
-        socketFactory:
-          port: 465
-          class: javax.net.ssl.SSLSocketFactory
+      max-file-size: 50MB
+      max-request-size: 50MB
+
 springdoc:
   api-docs:
     path: /api-docs
@@ -53,11 +66,6 @@ server:
     forward-headers-strategy: native
 
 logging:
-  level:
-    com:
-      ragnax:
-        valdivia:
-          ordencompra: INFO
   file:
     name: logfile
     path: /
@@ -92,6 +100,9 @@ swagger:
       nombre: RagnaxSistemas
       url: www.ragnaxsistemas.cl
 
+servicio:
+  app:
+    generarCartaNotificacion: generarCartaNotificacion
 archivo:
   carpeta:
     public: /Users/mac/Workspaces/WorkspaceSanBernardo/com-ragnax-sanbernardo-notificacion/src/main/resources/public_file/

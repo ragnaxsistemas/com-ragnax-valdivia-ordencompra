@@ -1,11 +1,18 @@
 *logfile
 *.gz
+.DS_Store
+**/.DS_Store
 *.DS_Store
+src/.DS_Store
+**/ .DS_Store
 HELP.md
 target/
+# === Compilación y Salida ===
 !.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+
+# === Excepciones (No ignorar código fuente) ===
+!**/src/main/**
+!**/src/test/**
 
 ### STS ###
 .apt_generated
@@ -34,3 +41,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# === REGLA ESPECÍFICA SFTP ===
+# Ignoramos el contenido de la carpeta SFTP aunque esté dentro de src/main
+src/main/resources/public_file/*
+# Opcional: permite subir la carpeta vacía si usas un .gitkeep
+!src/main/resources/public_file/.gitkeep

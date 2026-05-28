@@ -7,40 +7,47 @@ import com.ragnax.valdivia.ordencompra.application.service.utilidades.PlantillaC
 import com.ragnax.valdivia.ordencompra.application.service.utilidades.PlantillaOrdenCompra;
 import com.ragnax.valdivia.ordencompra.application.service.utilidades.Utilidades;
 import com.ragnax.valdivia.ordencompra.infraestructura.configuration.ApiProperties;
-import com.ragnax.valdivia.ordencompra.infraestructura.controller.dto.PlantillaDTO;
-import com.ragnax.valdivia.ordencompra.infraestructura.controller.dto.PlantillaStatusDTO;
-import com.ragnax.valdivia.ordencompra.infraestructura.controller.dto.PlantillaStatusImpresionDTO;
+import com.ragnax.valdivia.ordencompra.infraestructura.controller.dto.*;
 import com.ragnax.valdivia.ordencompra.infraestructura.entity.*;
 import com.ragnax.valdivia.ordencompra.infraestructura.entity.usuarios.GiroSii;
 import com.ragnax.valdivia.ordencompra.infraestructura.entity.usuarios.Unidad;
 import com.ragnax.valdivia.ordencompra.infraestructura.entity.usuarios.Usuarios;
 import com.ragnax.valdivia.ordencompra.infraestructura.exception.ValdiviaOCException;
 import com.ragnax.valdivia.ordencompra.infraestructura.repository.*;
+import com.ragnax.valdivia.ordencompra.infraestructura.repository.AdjuntoOrdenCompraRepository;
 import com.ragnax.valdivia.ordencompra.infraestructura.repository.usuarios.GiroSiiRepository;
 import com.ragnax.valdivia.ordencompra.infraestructura.repository.usuarios.UnidadRepository;
 import com.ragnax.valdivia.ordencompra.infraestructura.repository.usuarios.UsuariosRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static com.ragnax.valdivia.ordencompra.application.service.utilidades.Utilidades.generarCodigo;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class OrdenCompraService {
 
     private final ApiProperties apiProperties;
@@ -54,6 +61,7 @@ public class OrdenCompraService {
     private final StatusOrdenCompraRepository statusOrdenCompraRepository;
     private final UnidadRepository unidadRepository;
     private final UsuariosRepository usuariosRepository;
+    private final AdjuntoOrdenCompraRepository adjuntoOrdenCompraRepository;
 
     private static final String COD_STATUS_BORRADOR ="borrador";
     private static final int STATUS_BORRADOR = 1;
@@ -723,165 +731,117 @@ public class OrdenCompraService {
         }
         return dto;
     }
+    /******************************************************************************************************/
+    /******************************************************************************************************/
+    /******************************************************************************************************/
+    public AdjuntoDTO guardarAdjunto(String codigoOrdenCompra, PlantillaDTO plantillaDTO, MultipartFile file) throws IOException {
 
+        OrdenCompra oc = null;
+        Usuarios usuario = null;
+        if(!plantillaDTO.getCodOrdenCompra().equals("")){
+            oc =
+                    ocRepo.findByCodigoOrdenCompra(codigoOrdenCompra)
+                            .orElseThrow(() -> new ValdiviaOCException("OC "+codigoOrdenCompra +"no encontrada"));
+        }
 
-    /***public Page<PlantillaStatusDTO> listarOrdenCompraUltimoStatus(String codigoEstadoOc, Pageable pageable) {
+        if(!plantillaDTO.getUsernameUsuario().equals("")){
+            Optional<Usuarios> optUsuario = usuariosRepository.findByUsername(plantillaDTO.getUsernameUsuario());
 
-     EstadoOc estadoOc = estadoOcRepository.findByCodigoEstadoOc(codigoEstadoOc)
-     .orElseThrow(() -> new IllegalStateException("Status no encontrado: " + codigoEstadoOc));
+            usuario = optUsuario.isPresent() ? optUsuario.get() : Usuarios.builder().build();
 
-     return ocRepo.findByStatusActual(estadoOc.getIdEstadoOc().longValue(), pageable).map(this::convertToStatusDTO);
-     }***/
+        }
 
-    /***public Page<PlantillaStatusDTO> obtenerBorradoresCodigoOrdenCompra(Pageable pageable, String codigoOrdenCompra) {
-     Page<PlantillaStatusDTO> pgPlantillaStatusDTO = ocRepo.
-     buscarAvanzado(STATUS_BORRADOR, null,null, null, codigoOrdenCompra, null, pageable).map(this::convertToStatusDTO);
-     return pgPlantillaStatusDTO;
-     }***/
+        // 1. Definir y crear la ruta de la carpeta: public_file/{codigo_orden_compra}/
+        Path rutaCarpetaOC = Paths.get(apiProperties.getArchivoCarpetaPublic(), codigoOrdenCompra).toAbsolutePath().normalize();
+        Files.createDirectories(rutaCarpetaOC); // Crea las carpetas si no existen
 
-    /***public Page<PlantillaStatusDTO> listarPendientes(Pageable pageable) {
-     return ocRepo.findByStatusActual(STATUS_PENDIENTE, pageable).map(this::convertToStatusDTO);
-     }
+        // 2. Evitar colisiones de nombres (ej: si suben dos veces "cotizacion.pdf")
+        String nombreOriginal = file.getOriginalFilename();
+        String nombreUnico = UUID.randomUUID().toString() + "_" + nombreOriginal;
 
-     public Page<PlantillaStatusDTO> listarAutorizadas(Pageable pageable) {
+        // 3. Guardar el archivo físico en el servidor
+        Path rutaDestinoArchivo = rutaCarpetaOC.resolve(nombreUnico);
+        Files.copy(file.getInputStream(), rutaDestinoArchivo, StandardCopyOption.REPLACE_EXISTING);
 
-     return ocRepo.findByStatusActual(STATUS_AUTORIZADO, pageable).map(this::convertToStatusDTO);
-     }
+        // 4. Registrar en la Base de Datos
+        // Aquí mapeas a tu Entidad JPA que representa la tabla `adjunto_orden_compra`
 
-     public Page<PlantillaStatusDTO> listarConfirmadas(Pageable pageable) {
-     return ocRepo.findByStatusActual(STATUS_CONFIRMADO, pageable).map(this::convertToStatusDTO);
-     }
+        AdjuntoOrdenCompra adjuntoOrdenCompra = new AdjuntoOrdenCompra();
+        adjuntoOrdenCompra.setIdOrdenCompra(oc);
+        adjuntoOrdenCompra.setNombreArchivo(nombreOriginal);
+        adjuntoOrdenCompra.setRutaArchivo(rutaDestinoArchivo.toString()); // Guarda la ruta absoluta o relativa
+        adjuntoOrdenCompra.setTipoContenido(file.getContentType());
+        adjuntoOrdenCompra.setTamanoBytes((int) file.getSize());
+        adjuntoOrdenCompra.setIdUsuarioSube(usuario.getIdUsuario());
+        adjuntoOrdenCompra.setActive(true);
 
-     public Page<PlantillaStatusDTO> listarAnuladas(Pageable pageable) {
-     return ocRepo.findByStatusActual(STATUS_ANULADO, pageable).map(this::convertToStatusDTO);
-     }***/
+        adjuntoOrdenCompraRepository.save(adjuntoOrdenCompra);
 
+        guardar(plantillaDTO);
 
+        log.info("Archivo guardado en: " + rutaDestinoArchivo.toString());
+        return AdjuntoDTO.builder().nombreArchivo(adjuntoOrdenCompra.getNombreArchivo()).urlDescarga(adjuntoOrdenCompra.getRutaArchivo()).build();
 
-    /***protected PlantillaStatusDTO convertirAPlantilla(OrdenCompra oc) {
-     // Instanciamos el DTO hijo que contiene todos los campos extendidos
-     PlantillaStatusDTO dto = new PlantillaStatusDTO();
+    }
 
-     // 1. Campos heredados de PlantillaDTO
-     dto.setCodigoOrdenCompra(oc.getCodigoOrdenCompra());
-     dto.setFechaOrdenCompra(oc.getFechaCreacion() != null ? oc.getFechaCreacion().toString() : "");
-     dto.setNombreOrdenCompra(oc.getNombreOrdenCompra());
-     dto.setObservaciones(oc.getObservaciones());
-     dto.setListProductosOrden(oc.getListProductosOrden());
-     dto.setTotalNeto(oc.getTotalNeto());
-     dto.setImpuesto(oc.getImpuesto());
-     dto.setTotal(oc.getTotal());
+    public List<AdjuntoDTO> obtenerAdjuntosPorCodigoOrdenCompra(String codigoOrdenCompra) {
+        // 1. Buscar todos los registros de adjuntos asociados a esa OC
+        OrdenCompra oc = null;Usuarios usuario = null;
 
-     // 2. Mapeo detallado de USUARIO
-     if (oc.getIdUsuario() != null) {
-     Optional < Usuarios > optUsuarios = usuariosRepository.findById(oc.getIdUsuario());
-     if (optUsuarios.isPresent()) {
-     dto.setUsernameUsuario(optUsuarios.get().getUsername());
-     dto.setNombreUsuario(optUsuarios.get().getNombreMember());
-     dto.setApellidoUsuario(optUsuarios.get().getApellidoPaternoMember());
-     dto.setUsernameUsuario(optUsuarios.get().getUsername()); // Para compatibilidad con PlantillaDTO
-     }
+            oc =
+                    ocRepo.findByCodigoOrdenCompra(codigoOrdenCompra)
+                            .orElseThrow(() -> new ValdiviaOCException("OC "+codigoOrdenCompra +"no encontrada"));
 
-     }
+        List<AdjuntoOrdenCompra> listaAdjuntos = adjuntoOrdenCompraRepository.findByIdOrdenCompra(oc);
 
-     // 3. Mapeo detallado de UNIDAD
-     //if (oc.getUnidad() != null) {
-     //    dto.setUnidad(oc.getUnidad().getNombreUnidad()); // Campo padre
-     //    dto.setCodigoUnidad(oc.getUnidad().getCodigoUnidad());
-     //    dto.setNombreUnidad(oc.getUnidad().getNombreUnidad());
-     //}
+        // 2. Mapear la lista de entidades a una lista de DTOs para el Front-end
+        return listaAdjuntos.stream().map(adjunto -> {
+            // Armamos la URL apuntando al endpoint de descarga usando el ID del adjunto
+            String urlDescarga = "/api/ordenes-compra/adjuntos/descargar/" + adjunto.getIdAdjuntoOc();
 
-     // 4. Mapeo detallado de PROVEEDOR
-     if (oc.getProveedor() != null) {
-     dto.setProveedor(oc.getProveedor().getRutProveedor()); // Campo padre
-     dto.setRutProveedor(oc.getProveedor().getRutProveedor());
-     dto.setNombreProveedor(oc.getProveedor().getNombreProveedor());
-     dto.setRazonSocialProveedor(oc.getProveedor().getRazonSocialProveedor());
-     dto.setDireccionProveedor(oc.getProveedor().getDireccion());
-     //dto.setGiroProveedor(oc.getProveedor().getGiro());
-     dto.setTelefonoContactoProveedor(oc.getProveedor().getTelefonoContactoProveedor());
-     dto.setEmailProveedor(oc.getProveedor().getEmailProveedor());
+            return new AdjuntoDTO(
+                    adjunto.getNombreArchivo(),
+                    urlDescarga
+            );
+        }).toList(); // Si usas Java 16+, de lo contrario usa .collect(Collectors.toList())
+    }
 
-     //dto.setComunaProveedor(oc.getProveedor().getIdComuna().getNombreComuna());
-     //dto.setRegionProveedor(oc.getProveedor().getIdComuna().getRegion().getNombreRegion()) ;
+    public AdjuntoOrdenCompra buscarAdjuntoPorId(Integer idAdjunto) {
+        return adjuntoOrdenCompraRepository.findById(idAdjunto)
+                .orElseThrow(() -> new ValdiviaOCException("Registro de adjunto no encontrado en BD"));
+    }
 
+    public InfoDescargaArchivoDTO prepararDescargaUniversal(String subPath, String xForwardedFor) throws IOException {
 
-     }
+        // 1. Resolver la ruta absoluta en el disco del servidor
+        Path filePath = Paths.get(apiProperties.getArchivoCarpetaPublic(), subPath).toAbsolutePath().normalize();
 
-     // 5. Mapeo detallado de DOCUMENTO ELECTRÓNICO
-     if (oc.getDocumentoTributario() != null) {
-     dto.setIdDocumentoElectronico(oc.getDocumentoTributario().getIdDocumentoTributario()); // Campo padre
-     dto.setDocumentoElectronico(oc.getDocumentoTributario().getCodigoDocumentoTributario()); // Campo padre
-     dto.setCodigoDocumentoElectronico(oc.getDocumentoTributario().getCodigoDocumentoTributario());
-     dto.setNombreDocumentoElectronico(oc.getDocumentoTributario().getNombreDocumentoTributario());
-     dto.setDescripcionDocumentoElectronico(oc.getDocumentoTributario().getDescripcionDocumentoTributario());
-     // Si el impuesto viene como String en el DTO, lo convertimos
-     dto.setImpuestoDocumentoElectronico(String.valueOf(oc.getDocumentoTributario().getImpuesto()));
-     }
+        // 2. Validar la existencia del archivo físico (Lanzamos excepción si falla)
+        if (!Files.exists(filePath) || !Files.isReadable(filePath) || Files.isDirectory(filePath)) {
+            throw new FileNotFoundException("El archivo solicitado no existe o no se puede leer: " + subPath);
+        }
 
-     // 6. Lógica de ESTADO (obteniendo el más reciente)
-     StatusOrdenCompra ultimoEstado = oc.getStatusOrdenes().stream()
-     .max(Comparator.comparing(StatusOrdenCompra::getFechaEvento))
-     .orElse(null);
+        // 3. Obtener metadatos del archivo
+        String contentType = Files.probeContentType(filePath);
+        if (contentType == null) contentType = "application/octet-stream";
 
-     if (ultimoEstado != null && ultimoEstado.getEstadoOc() != null) {
-     String nombreEstado = ultimoEstado.getEstadoOc().getNombreEstadoOc();
-     dto.setEstadoOc(nombreEstado); // Campo padre
-     dto.setEstado(nombreEstado);
-     dto.setNombreEstado(nombreEstado);
-     dto.setDescripcionEstado(ultimoEstado.getEstadoOc().getDescripcion());
-     }
+        String fileName = filePath.getFileName().toString();
+        String nginxInternalUrl = null;
 
-     return dto;
-     }***/
+        // 4. Evaluar si se delega a Nginx o se prepara el recurso local
+        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+            // 🔥 PRODUCCIÓN (Construimos la URL interna de Nginx)
+            String rootPathStr = apiProperties.getArchivoCarpetaPublic();
+            String relativePath = filePath.toString().replace(rootPathStr, "");
 
-    /***public Page < PlantillaStatusDTO > buscarYFiltrar(Page < OrdenCompra > ordenes,
-     Integer idStatus, String rutProveedor, String nombreProv,
-     Integer unidadId, String codigo, LocalDate fecha) {
+            nginxInternalUrl = "/valdiviaoc/internal-files/" + relativePath.replace("\\", "/").replaceAll("^/+", "");
 
-     // Convertimos la lista de la página a un Stream para filtrar
-     List < PlantillaStatusDTO > filtrados = ordenes.getContent().stream()
-     .map(this::convertToStatusDTO) // Primero convertimos a DTO para tener los campos limpios
-     .filter(dto -> {
-     boolean match = true;
+            return new InfoDescargaArchivoDTO(null, contentType, fileName, nginxInternalUrl);
+        } else {
+            // 💻 DESARROLLO LOCAL (Cargamos el recurso físico en memoria controlada por Spring)
+            Resource resource = new UrlResource(filePath.toUri());
+            return new InfoDescargaArchivoDTO(resource, contentType, fileName, null);
+        }
+    }
 
-     // 1. Filtro por Estado (Exacto)
-     if (idStatus != null) {
-     match &= dto.getEstadoActualOc() != null &&
-     dto.getEstadoActualOc().equals(idStatus);
-     }
-
-     // 2. Filtro por RUT (Normalizado: quita puntos y guion)
-     if (rutProveedor != null && !rutProveedor.isBlank()) {
-     String rutLimpioFiltro = rutProveedor.replaceAll("[.-]", "");
-     String rutLimpioDTO = dto.getRutProveedor().replaceAll("[.-]", "");
-     match &= rutLimpioDTO.contains(rutLimpioFiltro);
-     }
-
-     // 3. Filtro por Folio (Formato aaa-bbb-1235-xxx)
-     // Buscamos que el código contenga el número correlativo (ej: "1235")
-     // if (filtros.getFolio() != null && !filtros.getFolio().isBlank()) {
-     //     String correlativoBuscado = extraerCorrelativo(filtros.getFolio());
-     //    match &= dto.getCodigoOc().contains(correlativoBuscado);
-     //}
-
-     return match;
-     })
-     .collect(Collectors.toList());
-
-     // Devolvemos una nueva instancia de Page con los resultados filtrados
-     return new PageImpl < > (filtrados, ordenes.getPageable(), filtrados.size());
-     }***/
-
-    /**
-     * Extrae el número central de un folio tipo aaa-bbb-1235-xxx
-     */
-    /***private String extraerCorrelativo(String folio) {
-     if (folio.contains("-")) {
-     String[] partes = folio.split("-");
-     // Si tiene el formato completo, el correlativo suele ser la 3ra parte (índice 2)
-     if (partes.length >= 3) return partes[2];
-     }
-     return folio; // Si no tiene guiones, asumimos que ya es el número
-     }***/
 }

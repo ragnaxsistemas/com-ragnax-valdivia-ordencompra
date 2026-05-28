@@ -3,6 +3,7 @@ package com.ragnax.valdivia.ordencompra.infraestructura.controller;
 import com.ragnax.valdivia.ordencompra.application.service.*;
 import com.ragnax.valdivia.ordencompra.application.service.model.DocumentoOrdenCompra;
 import com.ragnax.valdivia.ordencompra.infraestructura.controller.dto.*;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -13,8 +14,15 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.HandlerMapping;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -190,26 +198,7 @@ public class OrdenCompraController {
 
     }
 
-    // ══════════════════════════════════════════════
-    //  LISTADOS POR ESTADO ACTUAL
-    // ══════════════════════════════════════════════
 
-    /***@GetMapping("/ordenes-compra/borradores")
-    public ResponseEntity<Page<PlantillaStatusDTO>> listarBorradores(
-            @RequestParam(required = false) String codOc,
-            @RequestParam(required = false) String codEstadoOc,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-
-        if(codOc!=null){
-            return ResponseEntity.ok(ordenCompraService.obtenerBorradorescodOrdenCompra(PageRequest.of(page, size), codOc));
-        }
-       else{
-            return ResponseEntity.ok(ordenCompraService.listarOrdenCompraUltimoStatus(codEstadoOc, PageRequest.of(page, size)));
-        //}
-        //return   ResponseEntity.ok(null);
-        return null;
-    }***/
 
         @GetMapping("/ordenes-compra/busqueda-avanzada")
         public ResponseEntity<Page<PlantillaStatusDTO>> buscar(
@@ -228,38 +217,78 @@ public class OrdenCompraController {
             return ResponseEntity.ok(resultados);
         }
 
-        /***
-    @GetMapping("/ordenes-compra/pendientes")
-    public ResponseEntity<Page<PlantillaStatusDTO>> listarPendientes(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        //  return ResponseEntity.ok(ordenCompraService.listarPendientes(PageRequest.of(page, size)));
-        return   ResponseEntity.ok(null);
+        /****************** Archivos Adjuntos a OC ****************/
+        /****************** Archivos Adjuntos a OC ****************/
+        @PostMapping("/ordenes-compra/{codigoOrdenCompra}/adjuntos")
+        public ResponseEntity<String> subirAdjunto(
+                @PathVariable String codigoOrdenCompra,
+                @RequestBody OrdenCompraRequest req,
+                @RequestParam("file") MultipartFile file) {
+
+            if (file.isEmpty()) {
+                return ResponseEntity.badRequest().body("Por favor, selecciona un archivo válido.");
+            }
+
+            try {
+                ordenCompraService.guardarAdjunto(codigoOrdenCompra, req.getPlantillaDTO(), file);
+
+                return ResponseEntity.ok("Archivo subido y registrado con éxito para la OC: " + codigoOrdenCompra);
+            } catch (Exception e) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Error al subir el archivo: " + e.getMessage());
+            }
+        }
+
+        @GetMapping("/{codigoOrdenCompra}/archivos")
+        public ResponseEntity<List<AdjuntoDTO>> obtenerRutasAdjuntos(@PathVariable String codigoOrdenCompra) {
+            List<AdjuntoDTO> adjuntos = ordenCompraService.obtenerAdjuntosPorCodigoOrdenCompra(codigoOrdenCompra);
+
+            if (adjuntos.isEmpty()) {
+                return ResponseEntity.noContent().build(); // 204 No Content si no hay archivos
+            }
+
+            return ResponseEntity.ok(adjuntos); // 200 OK con la lista
+        }
+
+    @GetMapping("/download/**")
+    public ResponseEntity<?> downloadUniversal(HttpServletRequest request) {
+        try {
+            // 1. Extraer el path dinámico desde el HttpServletRequest
+            String pathPattern = (String) request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
+            String fullPath = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
+            String subPath = new AntPathMatcher().extractPathWithinPattern(pathPattern, fullPath);
+
+            // 2. Obtener la cabecera del proxy
+            String xForwardedFor = request.getHeader("X-Forwarded-For");
+
+            // 3. Delegar toda la lógica al servicio
+            InfoDescargaArchivoDTO infoDescarga = ordenCompraService.prepararDescargaUniversal(subPath, xForwardedFor);
+
+            // 4. Preparar cabeceras comunes de respuesta
+            String headerValue = String.format("inline; filename=\"%s\"", infoDescarga.getNombreArchivo());
+
+            ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(infoDescarga.getContentType()))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, headerValue);
+
+            // 5. Responder según la estrategia determinada por el servicio
+            if (infoDescarga.esParaNginx()) {
+                System.out.println("[PROD - VALDIVIA] Redireccionando a Nginx X-Accel: {}" + infoDescarga.getNginxInternalUrl());
+                return responseBuilder
+                        .header("X-Accel-Redirect", infoDescarga.getNginxInternalUrl())
+                        .build(); // Retorna vacío (Nginx inyectará los bytes)
+            } else {
+                System.out.println("[LOCAL - VALDIVIA] Transmitiendo bytes directamente desde Spring Boot");
+                return responseBuilder
+                        .body(infoDescarga.getRecurso()); // Retorna el recurso con los bytes reales
+            }
+
+        } catch (FileNotFoundException e) {
+            System.out.println("Archivo no encontrado: {}" +  e.getMessage());
+            return ResponseEntity.notFound().build();
+        } catch (IOException e) {
+            System.out.println("Error al procesar la descarga del archivo" + e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al procesar el archivo");
+        }
     }
-
-    @GetMapping("/ordenes-compra/autorizadas")
-    public ResponseEntity<Page<PlantillaStatusDTO>> listarAutorizadas(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        // return ResponseEntity.ok(ordenCompraService.listarAutorizadas(PageRequest.of(page, size)));
-        return   ResponseEntity.ok(null);
-    }
-
-    @GetMapping("/ordenes-compra/confirmadas")
-    public ResponseEntity<Page<PlantillaStatusDTO>> listarConfirmadas(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        // return ResponseEntity.ok(ordenCompraService.listarConfirmadas(PageRequest.of(page, size)));
-        return   ResponseEntity.ok(null);
-    }
-
-    @GetMapping("/ordenes-compra/anuladas")
-    public ResponseEntity<Page<PlantillaStatusDTO>> listarAnuladas(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        // return ResponseEntity.ok(ordenCompraService.listarAnuladas(PageRequest.of(page, size)));
-        return   ResponseEntity.ok(null);
-    }***/
-
-
 }

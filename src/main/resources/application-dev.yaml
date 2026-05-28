@@ -1,0 +1,44 @@
+spring:
+  config:
+    activate:
+      on-profile: app
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        # Forzar el dialecto aquí ayuda, pero el cambio real es en el Java
+        dialect: org.hibernate.dialect.MariaDBDialect
+        temp.use_jdbc_metadata_defaults: false
+  #dev consulta en servidor externo
+datasource:
+  primary:
+    jdbc-url: jdbc:mysql://ec2-3-140-205-250.us-east-2.compute.amazonaws.com:3306/imsb_prod?useSSL=false
+    username: dbimsb
+    password: "FTj$#88*"
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.zaxxer.hikari.HikariDataSource
+  usuarios:
+    jdbc-url: jdbc:mysql://ec2-3-140-205-250.us-east-2.compute.amazonaws.com:3306/ragnax_usuario_prod?useSSL=false
+    username: dbimsb
+    password: "FTj$#88*"
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.zaxxer.hikari.HikariDataSource
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    enabled: true
+  use-fqn: true
+
+logging:
+  file:
+    name: logfile
+    path: /
+
+archivo:
+  carpeta:
+    public: /Users/mac/Workspaces/WorkspaceSanBernardo/com-ragnax-sanbernardo-notificacion/src/main/resources/public_file/
+

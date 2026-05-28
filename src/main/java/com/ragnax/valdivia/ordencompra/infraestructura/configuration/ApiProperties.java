@@ -12,6 +12,9 @@ public class ApiProperties {
     @Value("${spring.profiles.active}")
     private String profile;
 
+    @Value("${archivo.carpeta.public}")
+    private String archivoCarpetaPublic;
+
     @Value("${archivo.html.nombreCarpetaTemplate}")
     private String archivoHtmlNombreCarpetaTemplate;
 
