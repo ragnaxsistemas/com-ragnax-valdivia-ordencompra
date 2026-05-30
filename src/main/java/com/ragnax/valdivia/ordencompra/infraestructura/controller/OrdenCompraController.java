@@ -3,6 +3,7 @@ package com.ragnax.valdivia.ordencompra.infraestructura.controller;
 import com.ragnax.valdivia.ordencompra.application.service.*;
 import com.ragnax.valdivia.ordencompra.application.service.model.DocumentoOrdenCompra;
 import com.ragnax.valdivia.ordencompra.infraestructura.controller.dto.*;
+import com.ragnax.valdivia.ordencompra.infraestructura.exception.ValdiviaOCException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -220,26 +221,25 @@ public class OrdenCompraController {
         /****************** Archivos Adjuntos a OC ****************/
         /****************** Archivos Adjuntos a OC ****************/
         @PostMapping("/ordenes-compra/{codigoOrdenCompra}/adjuntos")
-        public ResponseEntity<String> subirAdjunto(
+        public ResponseEntity<AdjuntoDTO> subirAdjunto(
                 @PathVariable String codigoOrdenCompra,
-                @RequestBody OrdenCompraRequest req,
+                @RequestPart("req") OrdenCompraRequest req,
                 @RequestParam("file") MultipartFile file) {
 
             if (file.isEmpty()) {
-                return ResponseEntity.badRequest().body("Por favor, selecciona un archivo válido.");
+                throw new ValdiviaOCException("Por favor, selecciona un archivo válido.");
             }
 
             try {
-                ordenCompraService.guardarAdjunto(codigoOrdenCompra, req.getPlantillaDTO(), file);
+                AdjuntoDTO adjDTO = ordenCompraService.guardarAdjunto(codigoOrdenCompra, req.getPlantillaDTO(), file);
 
-                return ResponseEntity.ok("Archivo subido y registrado con éxito para la OC: " + codigoOrdenCompra);
+                return ResponseEntity.ok(adjDTO);
             } catch (Exception e) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body("Error al subir el archivo: " + e.getMessage());
+                throw new ValdiviaOCException("Error al subir el archivo: " + e.getMessage());
             }
         }
 
-        @GetMapping("/{codigoOrdenCompra}/archivos")
+        @GetMapping("/ordenes-compra/{codigoOrdenCompra}/archivos")
         public ResponseEntity<List<AdjuntoDTO>> obtenerRutasAdjuntos(@PathVariable String codigoOrdenCompra) {
             List<AdjuntoDTO> adjuntos = ordenCompraService.obtenerAdjuntosPorCodigoOrdenCompra(codigoOrdenCompra);
 
@@ -250,7 +250,7 @@ public class OrdenCompraController {
             return ResponseEntity.ok(adjuntos); // 200 OK con la lista
         }
 
-    @GetMapping("/download/**")
+    @GetMapping("/ordenes-compra/download/**")
     public ResponseEntity<?> downloadUniversal(HttpServletRequest request) {
         try {
             // 1. Extraer el path dinámico desde el HttpServletRequest

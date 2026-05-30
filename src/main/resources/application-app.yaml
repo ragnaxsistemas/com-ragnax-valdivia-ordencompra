@@ -9,7 +9,7 @@ spring:
 #app es local
 datasource:
   primary:
-    jdbc-url: jdbc:mysql://localhost:3306/imsb?useSSL=false
+    jdbc-url: jdbc:mysql://localhost:3306/valdivia_cultura_oc?useSSL=false
     username: root
     password: m3R0b0L4sT4s4sD3lTr4b4j0
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -33,5 +33,5 @@ logging:
 
 archivo:
   carpeta:
-    public: /Users/mac/Workspaces/WorkspaceSanBernardo/com-ragnax-sanbernardo-notificacion/src/main/resources/public_file/
+    public: /Users/mac/Workspaces/WorkspaceValdivia/com-ragnax-valdivia-ordencompra/src/main/resources/public_file/
 

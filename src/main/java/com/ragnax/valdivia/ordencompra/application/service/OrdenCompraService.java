@@ -262,7 +262,7 @@ public class OrdenCompraService {
                         (Utilidades.formatearRut( plantillaDTO.getRutProveedor()))
                 .orElseThrow(() -> new ValdiviaOCException("Proveedor no encontrada"));
         oc.setProveedor(proveedor);
-
+        oc.setCodigoGiroProveedor(plantillaDTO.getCodGiroSeleccionado());
         // actualizar datos de plantilla
         if(plantillaDTO.getNombreOrdenCompra()!=null && !plantillaDTO.getNombreOrdenCompra().equals("")){
             oc.setNombreOrdenCompra(plantillaDTO.getNombreOrdenCompra());
@@ -422,6 +422,10 @@ public class OrdenCompraService {
         String observacionStatus = "Status Generado por el usuario "+ usuarioSup.getUsername() +" para la orden "+saved.getCodigoOrdenCompra() + " En estado Confirmada";
         EstadoOc estadoOc = registrarStatus(saved, STATUS_CONFIRMADO, usuarioSup.getIdUsuario(), observacionStatus);
         plantillaDTO.setEstadoActualOc(estadoOc.getNombreEstadoOc());
+        /***
+         * GenerarArchivo PDF para Plantilla
+         * **/
+
         return plantillaDTO;
     }
 
@@ -483,13 +487,21 @@ public class OrdenCompraService {
             Page< PlantillaStatusDTO > pgPlantillaStatus = realizarBusquedaAvanzada(
                     optStatusOrdenCompraActual.get().getEstadoOc().getCodigoEstadoOc(), oc.getProveedor().getRutProveedor(),
                     null, oc.getCodigoOrdenCompra(), null, null, PageRequest.of(0, 1));
-
-            Usuarios usuarioAutorizador  = usuariosRepository.findByUsername(oc.getUsernameAutorizador()).get();
-            Usuarios usuarioAnulador  = usuariosRepository.findByUsername(oc.getUsernameAnulador()).get();
+            Usuarios usuarioAutorizador  = null;
+            Usuarios usuarioAnulador  = null;
 
             PlantillaStatusImpresionDTO plantillaStatusImpresionDTO = new PlantillaStatusImpresionDTO(pgPlantillaStatus.getContent().get(0));
-            plantillaStatusImpresionDTO.setUsuarioAutorizador(usuarioAutorizador.getNombreMember().concat(" ").concat(usuarioAutorizador.getApellidoPaternoMember()));
-            plantillaStatusImpresionDTO.setUsuarioAnulador(usuarioAnulador.getNombreMember().concat(" ").concat(usuarioAnulador.getApellidoPaternoMember()));
+
+            if(oc.getUsernameAutorizador()!=null){
+                usuarioAutorizador  = usuariosRepository.findByUsername(oc.getUsernameAutorizador()).get();
+                plantillaStatusImpresionDTO.setUsuarioAutorizador(usuarioAutorizador.getNombreMember().concat(" ").concat(usuarioAutorizador.getApellidoPaternoMember()));
+            }
+
+            if(oc.getUsernameAnulador()!=null){
+                usuarioAnulador  = usuariosRepository.findByUsername(oc.getUsernameAnulador()).get();
+                plantillaStatusImpresionDTO.setUsuarioAnulador(usuarioAnulador.getNombreMember().concat(" ").concat(usuarioAnulador.getApellidoPaternoMember()));
+            }
+
             OrdenCompraHtml ordenCompraHtml = generarOrdenCompraHtml();
 
             String html = "";
@@ -738,50 +750,63 @@ public class OrdenCompraService {
 
         OrdenCompra oc = null;
         Usuarios usuario = null;
-        if(!plantillaDTO.getCodOrdenCompra().equals("")){
-            oc =
-                    ocRepo.findByCodigoOrdenCompra(codigoOrdenCompra)
-                            .orElseThrow(() -> new ValdiviaOCException("OC "+codigoOrdenCompra +"no encontrada"));
+
+        if (plantillaDTO.getCodOrdenCompra() != null && !plantillaDTO.getCodOrdenCompra().equals("")) {
+            oc = ocRepo.findByCodigoOrdenCompra(codigoOrdenCompra)
+                    .orElseThrow(() -> new ValdiviaOCException("OC " + codigoOrdenCompra + " no encontrada"));
         }
 
-        if(!plantillaDTO.getUsernameUsuario().equals("")){
+        if (plantillaDTO.getUsernameUsuario() != null && !plantillaDTO.getUsernameUsuario().equals("")) {
             Optional<Usuarios> optUsuario = usuariosRepository.findByUsername(plantillaDTO.getUsernameUsuario());
-
             usuario = optUsuario.isPresent() ? optUsuario.get() : Usuarios.builder().build();
-
         }
 
         // 1. Definir y crear la ruta de la carpeta: public_file/{codigo_orden_compra}/
         Path rutaCarpetaOC = Paths.get(apiProperties.getArchivoCarpetaPublic(), codigoOrdenCompra).toAbsolutePath().normalize();
         Files.createDirectories(rutaCarpetaOC); // Crea las carpetas si no existen
 
-        // 2. Evitar colisiones de nombres (ej: si suben dos veces "cotizacion.pdf")
+        // 2. Usar el nombre original SIN UUID para permitir que se pise
         String nombreOriginal = file.getOriginalFilename();
-        String nombreUnico = UUID.randomUUID().toString() + "_" + nombreOriginal;
 
-        // 3. Guardar el archivo físico en el servidor
-        Path rutaDestinoArchivo = rutaCarpetaOC.resolve(nombreUnico);
+        // 3. Guardar el archivo físico en el servidor (pisará el archivo si existe gracias a REPLACE_EXISTING)
+        Path rutaDestinoArchivo = rutaCarpetaOC.resolve(nombreOriginal);
         Files.copy(file.getInputStream(), rutaDestinoArchivo, StandardCopyOption.REPLACE_EXISTING);
+        log.info("Archivo físico copiado/remplazado en: " + rutaDestinoArchivo.toString());
 
-        // 4. Registrar en la Base de Datos
-        // Aquí mapeas a tu Entidad JPA que representa la tabla `adjunto_orden_compra`
+        // 4. Registrar o Actualizar en la Base de Datos
+        // Buscamos si ya existía un adjunto con el mismo nombre para esa OC específica
+        Optional<AdjuntoOrdenCompra> adjuntoExistenteOpt = adjuntoOrdenCompraRepository
+                .findByIdOrdenCompraAndNombreArchivoAndActiveTrue(oc, nombreOriginal);
 
-        AdjuntoOrdenCompra adjuntoOrdenCompra = new AdjuntoOrdenCompra();
-        adjuntoOrdenCompra.setIdOrdenCompra(oc);
-        adjuntoOrdenCompra.setNombreArchivo(nombreOriginal);
-        adjuntoOrdenCompra.setRutaArchivo(rutaDestinoArchivo.toString()); // Guarda la ruta absoluta o relativa
+        AdjuntoOrdenCompra adjuntoOrdenCompra;
+
+        if (adjuntoExistenteOpt.isPresent()) {
+            // Si ya existe, reutilizamos el registro existente para actualizar sus metadatos (pisar lógicamente)
+            adjuntoOrdenCompra = adjuntoExistenteOpt.get();
+            log.info("Se encontró registro previo para el archivo '" + nombreOriginal + "'. Actualizando metadatos...");
+        } else {
+            // Si no existe, creamos una nueva instancia
+            adjuntoOrdenCompra = new AdjuntoOrdenCompra();
+            adjuntoOrdenCompra.setIdOrdenCompra(oc);
+            adjuntoOrdenCompra.setNombreArchivo(nombreOriginal);
+            adjuntoOrdenCompra.setRutaArchivo(rutaDestinoArchivo.toString());
+        }
+
+        // Actualizamos los campos que cambian con la nueva subida
         adjuntoOrdenCompra.setTipoContenido(file.getContentType());
         adjuntoOrdenCompra.setTamanoBytes((int) file.getSize());
-        adjuntoOrdenCompra.setIdUsuarioSube(usuario.getIdUsuario());
+        if (usuario != null) {
+            adjuntoOrdenCompra.setIdUsuarioSube(usuario.getIdUsuario());
+        }
         adjuntoOrdenCompra.setActive(true);
 
+        // Guarda (si era existente hace un UPDATE, si era nuevo hace un INSERT)
         adjuntoOrdenCompraRepository.save(adjuntoOrdenCompra);
 
-        guardar(plantillaDTO);
-
-        log.info("Archivo guardado en: " + rutaDestinoArchivo.toString());
-        return AdjuntoDTO.builder().nombreArchivo(adjuntoOrdenCompra.getNombreArchivo()).urlDescarga(adjuntoOrdenCompra.getRutaArchivo()).build();
-
+        return AdjuntoDTO.builder()
+                .nombreArchivo(adjuntoOrdenCompra.getNombreArchivo())
+                .urlDescarga(adjuntoOrdenCompra.getRutaArchivo())
+                .build();
     }
 
     public List<AdjuntoDTO> obtenerAdjuntosPorCodigoOrdenCompra(String codigoOrdenCompra) {
@@ -797,7 +822,7 @@ public class OrdenCompraService {
         // 2. Mapear la lista de entidades a una lista de DTOs para el Front-end
         return listaAdjuntos.stream().map(adjunto -> {
             // Armamos la URL apuntando al endpoint de descarga usando el ID del adjunto
-            String urlDescarga = "/api/ordenes-compra/adjuntos/descargar/" + adjunto.getIdAdjuntoOc();
+            String urlDescarga = "/api/v1/oc/ordenes-compra/download/" + adjunto.getIdAdjuntoOc();
 
             return new AdjuntoDTO(
                     adjunto.getNombreArchivo(),
@@ -813,8 +838,9 @@ public class OrdenCompraService {
 
     public InfoDescargaArchivoDTO prepararDescargaUniversal(String subPath, String xForwardedFor) throws IOException {
 
+        AdjuntoOrdenCompra adjuntoOrdenCompra = buscarAdjuntoPorId(Integer.parseInt(subPath));
         // 1. Resolver la ruta absoluta en el disco del servidor
-        Path filePath = Paths.get(apiProperties.getArchivoCarpetaPublic(), subPath).toAbsolutePath().normalize();
+        Path filePath = Paths.get(adjuntoOrdenCompra.getRutaArchivo()).toAbsolutePath().normalize();
 
         // 2. Validar la existencia del archivo físico (Lanzamos excepción si falla)
         if (!Files.exists(filePath) || !Files.isReadable(filePath) || Files.isDirectory(filePath)) {

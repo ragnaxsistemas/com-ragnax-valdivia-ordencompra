@@ -18,19 +18,18 @@ spring:
         dialect: org.hibernate.dialect.MariaDBDialect
 
 datasource:
-  # Base de datos actual (Orden de Compra)
   primary:
-    jdbc-url: jdbc:mysql://localhost:3306/valdivia_cultura_oc?useSSL=false
-    username: root
-    password: m3R0b0L4sT4s4sD3lTr4b4j0
+    jdbc-url: jdbc:mysql://127.0.0.1:3306/valdivia_cultura_oc_prod?useSSL=false&allowPublicKeyRetrieval=true
+    username: dbvaldivia
+    password: "Pm8%$21"
     driver-class-name: com.mysql.cj.jdbc.Driver
-
-  # Nueva base de datos (Usuarios)
+    type: com.zaxxer.hikari.HikariDataSource
   usuarios:
-    jdbc-url: jdbc:mysql://localhost:3306/ragnax_usuariov1?useSSL=false
-    username: root
-    password: m3R0b0L4sT4s4sD3lTr4b4j0
+    jdbc-url: jdbc:mysql://127.0.0.1:3306/ragnax_usuario_prod?useSSL=false&allowPublicKeyRetrieval=true
+    username: dbvaldivia
+    password: "Pm8%$21"
     driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.zaxxer.hikari.HikariDataSource
 
   # Configuración de Hikari (Global o específica)
   hikari:
@@ -57,7 +56,7 @@ springdoc:
 
 
 server:
-  port: 8888
+  port: 9191
   servlet:
     context-path: /ccmvaldivia
     session:
