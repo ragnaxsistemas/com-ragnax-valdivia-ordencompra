@@ -2,7 +2,10 @@ package com.ragnax.valdivia.ordencompra.infraestructura.controller.dto;
 
 import org.springframework.core.io.Resource;
 
-public class InfoDescargaArchivoDTO {
+import java.io.Serializable;
+
+public class InfoDescargaArchivoDTO implements Serializable {
+    private static final long serialVersionUID = -1098427707835311622L;
     private final Resource recurso;
     private final String contentType;
     private final String nombreArchivo;

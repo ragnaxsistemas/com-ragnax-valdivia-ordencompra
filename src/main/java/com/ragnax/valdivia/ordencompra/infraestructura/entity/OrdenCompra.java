@@ -24,7 +24,7 @@ public class OrdenCompra {
                 foreignKey = @ForeignKey(name = "fk_oc_documento"))
     private DocumentoTributario documentoTributario;
 
-    @Column(name = "id_unidad", nullable = false)
+    @Column(name = "id_unidad")
     private Integer idUnidad;
 
     @Column(name = "id_usuario", nullable = false)

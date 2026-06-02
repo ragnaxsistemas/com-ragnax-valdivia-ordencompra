@@ -24,7 +24,19 @@ public class ApiProperties {
     @Value("${archivo.html.nombreHtmlAnulada}")
     private String archivoHtmlNombreHtmlAnulada;
 
-    @Value("${archivo.html.logoEscudo}")
-    private String archivoHtmlLogoEscudo;
+    @Value("${archivo.html.logoEscudoBl}")
+    private String archivoHtmlLogoEscudoBl;
+
+    @Value("${archivo.html.logoEscudoColor}")
+    private String archivoHtmlLogoEscudoColor;
+
+    @Value("${archivo.html.logoEscudoNegro}")
+    private String archivoHtmlLogoEscudoNegro;
+
+    @Value("${archivo.html.logoTimbreContabilidad}")
+    private String archivoHtmlLogoTimbreContabilidad;
+
+    @Value("${archivo.html.logoTimbreGerencia}")
+    private String archivoHtmlLogoTimbreGerencia;
 
 }

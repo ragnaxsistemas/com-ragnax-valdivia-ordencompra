@@ -30,7 +30,6 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/oc")
-@CrossOrigin(origins = "*")
 public class OrdenCompraController {
 
     private final OrdenCompraService ordenCompraService;
@@ -186,13 +185,14 @@ public class OrdenCompraController {
             headers.setContentType(MediaType.APPLICATION_PDF);
             String filename = "";
             if(documentoOrdenCompra.getCodEstadoOc().equals("anulado")){
-                 filename = "OC_Anulada_" + req.getCodOc() + ".pdf";
+                 filename = "ANULADA_" + req.getCodOc() + ".pdf";
             }else if(documentoOrdenCompra.getCodEstadoOc().equals("confirmada")){
-                 filename = "OC_Confirmada_" + req.getCodOc() + ".pdf";
+                 filename = "CONFIRMADA_" + req.getCodOc() + ".pdf";
             }else {
                 throw new Exception("Documento no encontrado");
             }
             headers.setContentDispositionFormData("attachment", filename);
+            headers.add("Access-Control-Expose-Headers", "Content-Disposition");
             headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
 
             return new ResponseEntity<>(documentoOrdenCompra.getDocByte(), headers, HttpStatus.OK);

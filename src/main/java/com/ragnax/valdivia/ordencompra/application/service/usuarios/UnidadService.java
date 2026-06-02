@@ -39,6 +39,25 @@ public class UnidadService {
         return Arrays.asList();
     }
 
+    @Transactional("usuariosTransactionManager")
+    public List<UnidadDTO> listarUnidadCompradoraEmpresa(String codEmresa) {
+
+        Optional<EmpresaCliente> optionalEmpresaCliente = empresaClienteRepository.findByCodigoEmpresaCliente(codEmresa);
+        if(optionalEmpresaCliente.isPresent()) {
+            return unidadRepository.findByEmpresaCliente(
+                            EmpresaCliente.builder()
+                                    .idEmpresaCliente(optionalEmpresaCliente.get().getIdEmpresaCliente())
+                                    .build()
+                    ).stream()
+                    .map(this::toDTO)
+                    // 🔍 Filtramos para que solo pasen los que contengan el código de la empresa cliente
+                    .filter(unidadDTO -> unidadDTO.getCodigoUnidad() != null &&
+                            unidadDTO.getCodigoUnidad().contains(optionalEmpresaCliente.get().getCodigoEmpresaCliente()))
+                    .toList();
+        }
+        return Arrays.asList();
+    }
+
     private UnidadDTO toDTO(Unidad c) {
         return UnidadDTO.builder().
                 codigoUnidad(c.getCodigoUnidad()).

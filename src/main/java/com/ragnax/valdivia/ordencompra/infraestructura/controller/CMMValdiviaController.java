@@ -12,7 +12,6 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1")
-@CrossOrigin(origins = "*")
 public class CMMValdiviaController {
 
     private final LoginService loginService;
@@ -34,7 +33,7 @@ public class CMMValdiviaController {
     public ResponseEntity<TokenResponse> login(@RequestBody LoginRequest request){
 
         LoginResponse loginResponse =
-                loginService.login(request.getUsername(), request.getPassword());
+                loginService.login(request.getUsername(), request.getPassword(), request.getCodEmpresa());
 
         TokenResponse tokenResponse = JwtUtil.generateToken(loginResponse);
 
@@ -79,6 +78,11 @@ public class CMMValdiviaController {
     @GetMapping("/unidad/{codEmpresa}")
     public ResponseEntity<List<UnidadDTO>> unidadListarEmpresa(@PathVariable String codEmpresa){
         return ResponseEntity.ok(unidadService.listarUnidadEmpresa(codEmpresa));
+    }
+
+    @GetMapping("/unidad-compradora/{codEmpresa}")
+    public ResponseEntity<List<UnidadDTO>> unidadCompradoraListarEmpresa(@PathVariable String codEmpresa){
+        return ResponseEntity.ok(unidadService.listarUnidadCompradoraEmpresa(codEmpresa));
     }
 
 }

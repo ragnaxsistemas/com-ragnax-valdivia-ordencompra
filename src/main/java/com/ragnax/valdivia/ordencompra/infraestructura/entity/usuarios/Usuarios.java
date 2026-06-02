@@ -44,9 +44,9 @@ public class Usuarios {
                 foreignKey = @ForeignKey(name = "fk_usuario_unidad"))
     private Unidad idUnidad;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_id_role",
-                foreignKey = @ForeignKey(name = "fk_usuario_role"))
+            foreignKey = @ForeignKey(name = "fk_usuario_role"))
     private Role idRole;
 
     @Column(name = "active")

@@ -9,15 +9,11 @@ import com.ragnax.valdivia.ordencompra.application.service.utilidades.Utilidades
 import com.ragnax.valdivia.ordencompra.infraestructura.configuration.ApiProperties;
 import com.ragnax.valdivia.ordencompra.infraestructura.controller.dto.*;
 import com.ragnax.valdivia.ordencompra.infraestructura.entity.*;
-import com.ragnax.valdivia.ordencompra.infraestructura.entity.usuarios.GiroSii;
-import com.ragnax.valdivia.ordencompra.infraestructura.entity.usuarios.Unidad;
-import com.ragnax.valdivia.ordencompra.infraestructura.entity.usuarios.Usuarios;
+import com.ragnax.valdivia.ordencompra.infraestructura.entity.usuarios.*;
 import com.ragnax.valdivia.ordencompra.infraestructura.exception.ValdiviaOCException;
 import com.ragnax.valdivia.ordencompra.infraestructura.repository.*;
 import com.ragnax.valdivia.ordencompra.infraestructura.repository.AdjuntoOrdenCompraRepository;
-import com.ragnax.valdivia.ordencompra.infraestructura.repository.usuarios.GiroSiiRepository;
-import com.ragnax.valdivia.ordencompra.infraestructura.repository.usuarios.UnidadRepository;
-import com.ragnax.valdivia.ordencompra.infraestructura.repository.usuarios.UsuariosRepository;
+import com.ragnax.valdivia.ordencompra.infraestructura.repository.usuarios.*;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -61,6 +57,8 @@ public class OrdenCompraService {
     private final StatusOrdenCompraRepository statusOrdenCompraRepository;
     private final UnidadRepository unidadRepository;
     private final UsuariosRepository usuariosRepository;
+    private final ComunasRepository comunasRepository;
+    private final RegionesRepository regionesRepository;
     private final AdjuntoOrdenCompraRepository adjuntoOrdenCompraRepository;
 
     private static final String COD_STATUS_BORRADOR ="borrador";
@@ -123,17 +121,17 @@ public class OrdenCompraService {
                         "Usuario no encontrado: " + plantillaDTO.getUsernameUsuario()));
 
         // ── 2. Resolver unidad (NOT NULL en BD) ──────────────────────────
-        Unidad unidad = unidadRepository
+       /***Unidad unidad = unidadRepository
                 .findByCodigoUnidad(plantillaDTO.getCodUnidad())
                 .orElseThrow(() -> new EntityNotFoundException(
-                        "Unidad no encontrada: " + plantillaDTO.getCodUnidad()));
+                        "Unidad no encontrada: " + plantillaDTO.getCodUnidad()));***/
 
         // ── 3. Resolver FK opcionales (nullable en BD) ───────────────────
 
         // ── 4. Construir entidad SIN código aún ──────────────────────────
         OrdenCompra oc = OrdenCompra.builder()
                 .idUsuario(usuario.getIdUsuario())
-                .idUnidad(unidad.getIdUnidad())
+               // .idUnidad(unidad.getIdUnidad())
                 .documentoTributario(null) // puede ser null (nullable en BD)
                 .proveedor(null) // puede ser null (nullable en BD)
                 .nombreOrdenCompra(plantillaDTO.getNombreOrdenCompra())
@@ -153,10 +151,13 @@ public class OrdenCompraService {
         saved.setCodigoOrdenCompra(generarCodigo(saved.getIdOrdenCompra()));
         OrdenCompra savedConCodigo = ocRepo.save(saved);
 
-        String observacionStatus = "Status Generado por el usuario "+ usuario.getUsername() +" para la orden "+saved.getCodigoOrdenCompra() + " En estado Borrador";
+
         // ── 7. Registrar estado borrador ──────────────────────────────────
         EstadoOc estadoOc = estadoOcRepository.findByCodigoEstadoOc(COD_STATUS_BORRADOR)
                 .orElseThrow(() -> new IllegalStateException("Status no encontrado: " + COD_STATUS_BORRADOR));
+
+        String observacionStatus = "Status "+ estadoOc.getNombreEstadoOc() +" para la orden "+saved.getCodigoOrdenCompra() +" para el usuario "+ usuario.getUsername();
+
         //Borrador
         registrarStatus(savedConCodigo, STATUS_BORRADOR, savedConCodigo.getIdUsuario(), observacionStatus);
 
@@ -225,7 +226,8 @@ public class OrdenCompraService {
         oc.setTotal(plantillaDTO.getTotal() != null ?  plantillaDTO.getTotal() : null);
 
         OrdenCompra saved = ocRepo.save(oc);
-        String observacionStatus = "Status Generado por el usuario "+ usuario.getUsername() +" para la orden "+saved.getCodigoOrdenCompra() + " En estado Guardar/Borrador";
+
+        String observacionStatus = "Status Guardar/Borrador para la orden "+saved.getCodigoOrdenCompra() +" para el usuario "+ usuario.getUsername();
         EstadoOc estadoOc = registrarStatus(saved, STATUS_BORRADOR, usuario.getIdUsuario(), observacionStatus);
 
         plantillaDTO.setEstadoActualOc(estadoOc.getNombreEstadoOc());
@@ -298,7 +300,7 @@ public class OrdenCompraService {
 
         OrdenCompra saved = ocRepo.save(oc);
 
-        String observacionStatus = "Status Generado por el usuario "+ usuario.getUsername() +" para la orden "+saved.getCodigoOrdenCompra() + " En estado Pendiente de Autorizacion";
+        String observacionStatus = "Status Pendiente de Autorizacion para la orden "+saved.getCodigoOrdenCompra() +" para el usuario "+ usuario.getUsername();
 
         EstadoOc estadoOc = registrarStatus(saved, STATUS_PENDIENTE, usuario.getIdUsuario(), observacionStatus);
         plantillaDTO.setEstadoActualOc(estadoOc.getNombreEstadoOc());
@@ -318,7 +320,7 @@ public class OrdenCompraService {
                 .orElseThrow(() -> new ValdiviaOCException("OC "+codOCdevolver +"no encontrada"));
 
         validarNoSeBloqueada(oc);
-        if(usuarioSup.getIdUnidad().getIdUnidad().equals(oc.getIdUnidad())){
+
             Optional<StatusOrdenCompra> optStatusOrdenCompraActual = statusOrdenCompraRepository.findStatusActual(oc.getIdOrdenCompra().longValue());
             //Pendiente
             validarTransicionEstado(optStatusOrdenCompraActual.get().getEstadoOc().getIdEstadoOc(), 1);
@@ -327,15 +329,15 @@ public class OrdenCompraService {
             // actualizar datos de plantilla
             //OrdenCompra saved = ocRepo.save(oc);
 
-            String observacionStatus = "Status Generado por el usuario "+ usuarioSupervisor +" para la orden "+oc.getCodigoOrdenCompra() + " En estado Devolver/Borrador";
+            String observacionStatus = "Status Devolver/Borrador para la orden "+oc.getCodigoOrdenCompra() +" para el usuario "+ usuarioSupervisor;
             EstadoOc estadoOc = registrarStatus(oc, STATUS_BORRADOR, usuarioSup.getIdUsuario(), observacionStatus);
 
 
             plantillaDTO = convertToDTO(oc);
             plantillaDTO.setEstadoActualOc(estadoOc.getNombreEstadoOc());
             return plantillaDTO;
-        }
-        throw new ValdiviaOCException("OC "+codOCdevolver +" unidad Invalida");
+
+
         //Con la OC obtenida, buscar estado actual
     }
 
@@ -361,7 +363,7 @@ public class OrdenCompraService {
         oc.setUsernameAutorizador(usuarioSup.getUsername());
         OrdenCompra saved = ocRepo.save(oc);
 
-        String observacionStatus = "Status Generado por el usuario "+ usuarioSupervisor +" para la orden "+saved.getCodigoOrdenCompra() + " En estado Autorizada";
+        String observacionStatus = "Status Autorizada para la orden "+oc.getCodigoOrdenCompra() +" para el usuario "+ usuarioSupervisor;
         EstadoOc estadoOc = registrarStatus(saved, STATUS_AUTORIZADO, usuarioSup.getIdUsuario(), observacionStatus);
         plantillaDTO.setEstadoActualOc(estadoOc.getNombreEstadoOc());
         return plantillaDTO;
@@ -388,7 +390,7 @@ public class OrdenCompraService {
         oc.setUsernameAnulador(usuarioSup.getUsername());
         OrdenCompra saved = ocRepo.save(oc);
 
-        String observacionStatus = "Status Generado por el usuario "+ usuarioSupervisor +" para la orden "+saved.getCodigoOrdenCompra() + " En estado Autorizada";
+        String observacionStatus = "Status Anular para la orden "+oc.getCodigoOrdenCompra() +" para el usuario "+ usuarioSupervisor;
         EstadoOc estadoOc = registrarStatus(saved, STATUS_ANULADO, usuarioSup.getIdUsuario(), observacionStatus);
         plantillaDTO.setEstadoActualOc(estadoOc.getNombreEstadoOc());
         return plantillaDTO;
@@ -419,7 +421,7 @@ public class OrdenCompraService {
         oc.setUsernameConfirmador(usuarioSup.getUsername());
         OrdenCompra saved = ocRepo.save(oc);
 
-        String observacionStatus = "Status Generado por el usuario "+ usuarioSup.getUsername() +" para la orden "+saved.getCodigoOrdenCompra() + " En estado Confirmada";
+        String observacionStatus = "Status Confirmada para la orden "+oc.getCodigoOrdenCompra() +" para el usuario "+ usuarioSupervisor;
         EstadoOc estadoOc = registrarStatus(saved, STATUS_CONFIRMADO, usuarioSup.getIdUsuario(), observacionStatus);
         plantillaDTO.setEstadoActualOc(estadoOc.getNombreEstadoOc());
         /***
@@ -429,26 +431,35 @@ public class OrdenCompraService {
         return plantillaDTO;
     }
 
-    private OrdenCompraHtml generarOrdenCompraHtml() throws Exception {
-        //Tres Logos Escudo, Firma y BCIx2
+    private OrdenCompraHtml generarOrdenCompraHtml(String plantilla) throws Exception {
+        //Tres Logos Firmas
             List<String> logos = Arrays.asList(
                     apiProperties.getArchivoHtmlNombreCarpetaTemplate().concat(
-                           apiProperties.getArchivoHtmlLogoEscudo())
-//                    ,apiProperties.getArchivoHtmlNombreCarpetaTemplate().concat(
-//                            apiProperties.getArchivoHtmlLogoFirmaTesoreria()),
-//                    apiProperties.getArchivoHtmlNombreCarpetaTemplate().concat(
-//                            apiProperties.getArchivoHtmlLogoBciCupon())
-//
+                           apiProperties.getArchivoHtmlLogoEscudoColor()),
+                    apiProperties.getArchivoHtmlNombreCarpetaTemplate().concat(
+                            apiProperties.getArchivoHtmlLogoTimbreContabilidad()),
+                    apiProperties.getArchivoHtmlNombreCarpetaTemplate().concat(
+                            apiProperties.getArchivoHtmlLogoTimbreGerencia())
             );
 
             ClassPathResource imgFileEsc = new ClassPathResource(logos.get(0)); //bci
-//            ClassPathResource imgFileFirma = new ClassPathResource(logos.get(1)); //firma
-//            ClassPathResource imgFileBci = new ClassPathResource(logos.get(2)); //escudo
+            ClassPathResource imgFileContabilidad = new ClassPathResource(logos.get(1)); //contabilidad
+            ClassPathResource imgFileGerencia = new ClassPathResource(logos.get(2)); //gerencia
 
             byte[] imageBytesEsc;
             try (InputStream is = imgFileEsc.getInputStream()) {
                 imageBytesEsc = is.readAllBytes();
             }
+
+        byte[] imageBytesContabilidad;
+        try (InputStream is = imgFileContabilidad.getInputStream()) {
+            imageBytesContabilidad = is.readAllBytes();
+        }
+
+        byte[] imageBytesGerencia;
+        try (InputStream is = imgFileGerencia.getInputStream()) {
+            imageBytesGerencia = is.readAllBytes();
+        }
 
 //            byte[] imageBytesFirma;
 //            try (InputStream is = imgFileFirma.getInputStream()) {
@@ -460,15 +471,15 @@ public class OrdenCompraService {
 //                imageBytesBci = is.readAllBytes();
 //            }
 
-              String base64Esc = Base64.getEncoder().encodeToString(imageBytesEsc);
+        String base64Esc = Base64.getEncoder().encodeToString(imageBytesEsc);
+        String base64Contabilidad = Base64.getEncoder().encodeToString(imageBytesContabilidad);
+        String base64Gerencia = Base64.getEncoder().encodeToString(imageBytesGerencia);
 
         /***Cargar una vez el String de html**/
         String htmlIndividual = PlantillaCargar.cargarPlantilla(
-                apiProperties.getArchivoHtmlNombreCarpetaTemplate().concat(
-                apiProperties.getArchivoHtmlNombreHtmlConfirmada())
-        );
+                plantilla);
 
-        return new OrdenCompraHtml(htmlIndividual, Arrays.asList(base64Esc));
+        return new OrdenCompraHtml(htmlIndividual, Arrays.asList(base64Esc, base64Contabilidad, base64Gerencia));
 
     }
 
@@ -489,6 +500,7 @@ public class OrdenCompraService {
                     null, oc.getCodigoOrdenCompra(), null, null, PageRequest.of(0, 1));
             Usuarios usuarioAutorizador  = null;
             Usuarios usuarioAnulador  = null;
+            Usuarios usuarioConfirmador  = null;
 
             PlantillaStatusImpresionDTO plantillaStatusImpresionDTO = new PlantillaStatusImpresionDTO(pgPlantillaStatus.getContent().get(0));
 
@@ -502,22 +514,42 @@ public class OrdenCompraService {
                 plantillaStatusImpresionDTO.setUsuarioAnulador(usuarioAnulador.getNombreMember().concat(" ").concat(usuarioAnulador.getApellidoPaternoMember()));
             }
 
-            OrdenCompraHtml ordenCompraHtml = generarOrdenCompraHtml();
+            if(oc.getUsernameConfirmador()!=null){
+                usuarioConfirmador  = usuariosRepository.findByUsername(oc.getUsernameConfirmador()).get();
+                plantillaStatusImpresionDTO.setUsuarioConfirmador(usuarioConfirmador.getNombreMember().concat(" ").concat(usuarioConfirmador.getApellidoPaternoMember()));
+            }
+
+            if(oc.getProveedor()!=null){
+
+                plantillaStatusImpresionDTO.setTelefonoContactoProveedor(oc.getProveedor().getTelefonoContactoProveedor());
+
+                Optional<Comunas> optComunas = comunasRepository.findById(oc.getProveedor().getIdComuna());
+                Optional<Regiones> optRegiones = regionesRepository.findById(optComunas.get().getRegion().getIdRegion());
+
+                plantillaStatusImpresionDTO.setCodRegionProveedor(optRegiones.get().getCodigoRegion());
+                plantillaStatusImpresionDTO.setCodComunaProveedor(optComunas.get().getCodigoComuna());
+                plantillaStatusImpresionDTO.setNombreRegionProveedor(optRegiones.get().getNombreRegion());
+                plantillaStatusImpresionDTO.setNombreComunaProveedor(optComunas.get().getNombreComuna());
+            }
+
+
 
             String html = "";
             if(optStatusOrdenCompraActual.get().getEstadoOc().getIdEstadoOc() == 4L){
-                html = PlantillaOrdenCompra.generarPlantillaConfirmada(ordenCompraHtml,
+                OrdenCompraHtml ordenCompraHtml = generarOrdenCompraHtml(apiProperties.getArchivoHtmlNombreCarpetaTemplate().concat(
+                        apiProperties.getArchivoHtmlNombreHtmlAnulada()));
+                html = PlantillaOrdenCompra.generarPlantillaAnulado(ordenCompraHtml,
                         plantillaStatusImpresionDTO);
             }
             if(optStatusOrdenCompraActual.get().getEstadoOc().getIdEstadoOc() == 5 ){
-                html = PlantillaOrdenCompra.generarPlantillaAnulado(ordenCompraHtml,
+                OrdenCompraHtml ordenCompraHtml = generarOrdenCompraHtml(apiProperties.getArchivoHtmlNombreCarpetaTemplate().concat(
+                        apiProperties.getArchivoHtmlNombreHtmlConfirmada()));
+                html = PlantillaOrdenCompra.generarPlantillaConfirmada(ordenCompraHtml,
                         plantillaStatusImpresionDTO);
             }
 
             return new DocumentoOrdenCompra(optStatusOrdenCompraActual.get().getEstadoOc().getCodigoEstadoOc(), pdfComponent.generarPdffromHtml(html));
         }
-
-
 
         return null;
     }

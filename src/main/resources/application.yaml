@@ -99,5 +99,9 @@ archivo:
     nombreCarpetaTemplate: templates/
     nombreHtmlConfirmada: oc_confirmada.html
     nombreHtmlAnulada: oc_anulada.html
-    logoEscudo: logos/LogoEsquinaSuperiorIzquierda.png
+    logoEscudoBl: logos/LOGO_CCM_BL.png
+    logoEscudoColor: logos/LOGO_CCM_COLOR.png
+    logoEscudoNegro: logos/LOGO_CCM_NEGRO.png
+    logoTimbreContabilidad: logos/Timbre_Contabilidad.png
+    logoTimbreGerencia: logos/Timbre_Gerencia.png
 
