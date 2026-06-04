@@ -112,14 +112,14 @@ public class OrdenCompraService {
      }
 
     // ─── 1. Guardar (Borrador — estado 1) ─────────────────── //Mandar vacio a Plantilla
-    public PlantillaDTO generarOC(PlantillaDTO plantillaDTO) {
+    public PlantillaDTO generarOC(PlantillaDTO plantillaDTO, String usernameCreador) {
 
         // ── 1. Resolver usuario (NOT NULL en BD) ─────────────────────────
         Usuarios usuario = usuariosRepository
-                .findByUsername(plantillaDTO.getUsernameUsuario())
+                .findByUsername(usernameCreador)
                 .orElseThrow(() -> new EntityNotFoundException(
-                        "Usuario no encontrado: " + plantillaDTO.getUsernameUsuario()));
-
+                        "Usuario no encontrado: " + usernameCreador));
+        /***Validacion de la Unidad del usuario**/
         // ── 2. Resolver unidad (NOT NULL en BD) ──────────────────────────
        /***Unidad unidad = unidadRepository
                 .findByCodigoUnidad(plantillaDTO.getCodUnidad())
@@ -130,7 +130,7 @@ public class OrdenCompraService {
 
         // ── 4. Construir entidad SIN código aún ──────────────────────────
         OrdenCompra oc = OrdenCompra.builder()
-                .idUsuario(usuario.getIdUsuario())
+
                // .idUnidad(unidad.getIdUnidad())
                 .documentoTributario(null) // puede ser null (nullable en BD)
                 .proveedor(null) // puede ser null (nullable en BD)
@@ -140,6 +140,9 @@ public class OrdenCompraService {
                 .totalNeto(plantillaDTO.getTotalNeto())
                 .impuesto(plantillaDTO.getImpuesto())
                 .total(plantillaDTO.getTotal())
+                /**** **/
+                .idUsuarioCreador(usuario.getIdUsuario())
+
                 .build();
 
         // ── 5. Primer save → BD asigna el ID real (sin condición de carrera) ─
@@ -151,7 +154,6 @@ public class OrdenCompraService {
         saved.setCodigoOrdenCompra(generarCodigo(saved.getIdOrdenCompra()));
         OrdenCompra savedConCodigo = ocRepo.save(saved);
 
-
         // ── 7. Registrar estado borrador ──────────────────────────────────
         EstadoOc estadoOc = estadoOcRepository.findByCodigoEstadoOc(COD_STATUS_BORRADOR)
                 .orElseThrow(() -> new IllegalStateException("Status no encontrado: " + COD_STATUS_BORRADOR));
@@ -159,20 +161,24 @@ public class OrdenCompraService {
         String observacionStatus = "Status "+ estadoOc.getNombreEstadoOc() +" para la orden "+saved.getCodigoOrdenCompra() +" para el usuario "+ usuario.getUsername();
 
         //Borrador
-        registrarStatus(savedConCodigo, STATUS_BORRADOR, savedConCodigo.getIdUsuario(), observacionStatus);
+        registrarStatus(savedConCodigo, STATUS_BORRADOR, savedConCodigo.getIdUsuarioCreador(), observacionStatus);
+
+        //Solo al crear se limpia la carpeta
+        limpiarCarpetaOrdenCompra(oc.getCodigoOrdenCompra());
 
         plantillaDTO.setCodOrdenCompra(oc.getCodigoOrdenCompra());
         plantillaDTO.setEstadoActualOc(estadoOc.getNombreEstadoOc());
+        plantillaDTO.setCodEstadoActualOc(estadoOc.getCodigoEstadoOc());
         plantillaDTO.setCodEstadoActualOc(estadoOc.getCodigoEstadoOc());
 
         return plantillaDTO;
     }
 
     // ─── 1. Guardar (Borrador — estado 1) ─────────────────── //Mandar vacio a Plantilla
-    public PlantillaDTO guardar(PlantillaDTO plantillaDTO) {
+    public PlantillaStatusDTO guardar(PlantillaDTO plantillaDTO, String usernameGuardar) {
 
         OrdenCompra oc = null;
-        Usuarios usuario = null;
+        //Usuarios usuario = null;
 
         if(!plantillaDTO.getCodOrdenCompra().equals("")){
             oc =
@@ -185,12 +191,12 @@ public class OrdenCompraService {
         //Pendiente
         validarTransicionEstado(optStatusOrdenCompraActual.get().getEstadoOc().getIdEstadoOc(), 1);
 
-        if(!plantillaDTO.getUsernameUsuario().equals("")){
-            Optional<Usuarios> optUsuario = usuariosRepository.findByUsername(plantillaDTO.getUsernameUsuario());
+        /***if(!plantillaDTO.getUsernameUsuarioCreador().equals("")){
+            Optional<Usuarios> optUsuario = usuariosRepository.findByUsername(plantillaDTO.getUsernameUsuarioCreador());
 
             usuario = optUsuario.isPresent() ? optUsuario.get() : Usuarios.builder().build();
             oc.setIdUsuario(usuario.getIdUsuario());
-        }
+        }***/
         //Enviar el Id del DTE
         if(!plantillaDTO.getCodDocumentoTributario().equals("")){
             Optional<DocumentoTributario> optDte = documentoTributarioRepository.findByCodigoDocumentoTributario
@@ -227,15 +233,20 @@ public class OrdenCompraService {
 
         OrdenCompra saved = ocRepo.save(oc);
 
-        String observacionStatus = "Status Guardar/Borrador para la orden "+saved.getCodigoOrdenCompra() +" para el usuario "+ usuario.getUsername();
-        EstadoOc estadoOc = registrarStatus(saved, STATUS_BORRADOR, usuario.getIdUsuario(), observacionStatus);
+        String observacionStatus = "Status Guardar/Borrador para la orden "+saved.getCodigoOrdenCompra() +" para el usuario "+ usernameGuardar;
+        EstadoOc estadoOc = registrarStatus(saved, STATUS_BORRADOR, oc.getIdUsuarioCreador(), observacionStatus);
 
-        plantillaDTO.setEstadoActualOc(estadoOc.getNombreEstadoOc());
-        return plantillaDTO;
+        plantillaDTO.setEstadoActualOc(estadoOc.getNombreEstadoOc().toUpperCase());
+
+        return realizarBusquedaAvanzada(
+                optStatusOrdenCompraActual.get().getEstadoOc().getCodigoEstadoOc(), oc.getProveedor().getRutProveedor(),
+                null, oc.getCodigoOrdenCompra(), null, null, PageRequest.of(0, 1)).getContent().get(0);
+
+ //       return plantillaDTO;
     }
     /******/
     // ─── 2. Solicitar autorización (Pendiente — estado 2) ───
-    public PlantillaDTO solicitarAutorizacion(PlantillaDTO plantillaDTO) {
+    public PlantillaDTO solicitarAutorizacion(PlantillaDTO plantillaDTO, String usernameSolicitante, String codUnidadSupervisor) {
 
         OrdenCompra oc = ocRepo.findByCodigoOrdenCompra(plantillaDTO.getCodOrdenCompra())
                 .orElseThrow(() -> new ValdiviaOCException("OC "+plantillaDTO.getCodOrdenCompra() +"no encontrada"));
@@ -246,9 +257,13 @@ public class OrdenCompraService {
         //Pendiente
         validarTransicionEstado(optStatusOrdenCompraActual.get().getEstadoOc().getIdEstadoOc(), 2);
 
-        Usuarios usuario = usuariosRepository.findByUsername(plantillaDTO.getUsernameUsuario())
-                .orElseThrow(() -> new ValdiviaOCException("Usuario no encontrado: " + plantillaDTO.getUsernameUsuario()));
-        oc.setIdUsuario(usuario.getIdUsuario());
+        Unidad unidadSolicitante = unidadRepository.findByCodigoUnidad
+                        (codUnidadSupervisor)
+                .orElseThrow(() -> new ValdiviaOCException("Unidad no encontrada: " + codUnidadSupervisor));
+
+        Usuarios usuarioSolicitante = usuariosRepository.findByUsernameAndIdUnidad(usernameSolicitante, unidadSolicitante)
+                .orElseThrow(() -> new ValdiviaOCException("Usuario no encontrado: " + usernameSolicitante));
+        oc.setIdUsuarioSolicitante(usuarioSolicitante.getIdUsuario());
 
         DocumentoTributario dte = documentoTributarioRepository.findByCodigoDocumentoTributario
                         (plantillaDTO.getCodDocumentoTributario())
@@ -258,6 +273,7 @@ public class OrdenCompraService {
         Unidad unidad = unidadRepository.findByCodigoUnidad
                         (plantillaDTO.getCodUnidad())
                 .orElseThrow(() -> new ValdiviaOCException("Unidad no encontrada: " + plantillaDTO.getCodUnidad()));
+
         oc.setIdUnidad(unidad.getIdUnidad());
 
         Proveedor proveedor = proveedorRepository.findByRutProveedor
@@ -266,6 +282,7 @@ public class OrdenCompraService {
         oc.setProveedor(proveedor);
         oc.setCodigoGiroProveedor(plantillaDTO.getCodGiroSeleccionado());
         // actualizar datos de plantilla
+
         if(plantillaDTO.getNombreOrdenCompra()!=null && !plantillaDTO.getNombreOrdenCompra().equals("")){
             oc.setNombreOrdenCompra(plantillaDTO.getNombreOrdenCompra());
         }else{
@@ -300,49 +317,53 @@ public class OrdenCompraService {
 
         OrdenCompra saved = ocRepo.save(oc);
 
-        String observacionStatus = "Status Pendiente de Autorizacion para la orden "+saved.getCodigoOrdenCompra() +" para el usuario "+ usuario.getUsername();
+        String observacionStatus = "Status Pendiente de Autorizacion para la orden "+saved.getCodigoOrdenCompra() +" para el usuarioSolicitante "+ usuarioSolicitante.getUsername();
 
-        EstadoOc estadoOc = registrarStatus(saved, STATUS_PENDIENTE, usuario.getIdUsuario(), observacionStatus);
+        EstadoOc estadoOc = registrarStatus(saved, STATUS_PENDIENTE, usuarioSolicitante.getIdUsuario(), observacionStatus);
         plantillaDTO.setEstadoActualOc(estadoOc.getNombreEstadoOc());
         return plantillaDTO;
     }
 
     // ─── 3. Devolver (Borrador — estado 1, acción supervisor) ─
-    public PlantillaDTO devolver(String codOCdevolver, PlantillaDTO plantillaDTO, String usuarioSupervisor) {
+    public PlantillaDTO devolver(String codOCdevolver, PlantillaDTO plantillaDTO, String usernameSupervisor, String codUnidadSupervisor) {
+
         if(!codOCdevolver.equalsIgnoreCase(plantillaDTO.getCodOrdenCompra())){
             new ValdiviaOCException("OC "+codOCdevolver +"no valida");
         }
 
-        Usuarios usuarioSup = usuariosRepository.findByUsername(usuarioSupervisor)
-                .orElseThrow(() -> new ValdiviaOCException("Usuario no encontrado: " + usuarioSupervisor));
+        Unidad unidadSupervisor = unidadRepository.findByCodigoUnidad
+                        (codUnidadSupervisor)
+                .orElseThrow(() -> new ValdiviaOCException("Unidad no encontrada: " + codUnidadSupervisor));
+
+        Usuarios usuarioSup = usuariosRepository.findByUsernameAndIdUnidad(usernameSupervisor, unidadSupervisor)
+                .orElseThrow(() -> new ValdiviaOCException("Usuario no encontrado: " + usernameSupervisor));
 
         OrdenCompra oc = ocRepo.findByCodigoOrdenCompra(codOCdevolver)
                 .orElseThrow(() -> new ValdiviaOCException("OC "+codOCdevolver +"no encontrada"));
 
         validarNoSeBloqueada(oc);
 
-            Optional<StatusOrdenCompra> optStatusOrdenCompraActual = statusOrdenCompraRepository.findStatusActual(oc.getIdOrdenCompra().longValue());
-            //Pendiente
-            validarTransicionEstado(optStatusOrdenCompraActual.get().getEstadoOc().getIdEstadoOc(), 1);
+        Optional<StatusOrdenCompra> optStatusOrdenCompraActual = statusOrdenCompraRepository.findStatusActual(oc.getIdOrdenCompra().longValue());
+        //Pendiente
+        validarTransicionEstado(optStatusOrdenCompraActual.get().getEstadoOc().getIdEstadoOc(), 1);
 
-            //validarUnidadSupervisor(oc.getIdUsuario(), usuarioSup);
-            // actualizar datos de plantilla
-            //OrdenCompra saved = ocRepo.save(oc);
+        //validarUnidadSupervisor(oc.getIdUsuario(), usuarioSup);
+        // actualizar datos de plantilla
+        //OrdenCompra saved = ocRepo.save(oc);
 
-            String observacionStatus = "Status Devolver/Borrador para la orden "+oc.getCodigoOrdenCompra() +" para el usuario "+ usuarioSupervisor;
-            EstadoOc estadoOc = registrarStatus(oc, STATUS_BORRADOR, usuarioSup.getIdUsuario(), observacionStatus);
+        String observacionStatus = "Status Devolver/Borrador para la orden "+oc.getCodigoOrdenCompra() +" para el usuario "+ usernameSupervisor;
+        EstadoOc estadoOc = registrarStatus(oc, STATUS_BORRADOR, usuarioSup.getIdUsuario(), observacionStatus);
 
-
-            plantillaDTO = convertToDTO(oc);
-            plantillaDTO.setEstadoActualOc(estadoOc.getNombreEstadoOc());
-            return plantillaDTO;
+        plantillaDTO = convertToDTO(oc);
+        plantillaDTO.setEstadoActualOc(estadoOc.getNombreEstadoOc());
+        return plantillaDTO;
 
 
         //Con la OC obtenida, buscar estado actual
     }
 
     // ─── 4. Autorizar (estado 3) ─────────────────────────────
-    public PlantillaDTO autorizar(String codOCautorizar, PlantillaDTO plantillaDTO, String usuarioSupervisor) {
+    public PlantillaDTO autorizar(String codOCautorizar, PlantillaDTO plantillaDTO, String usernameSupervisor, String codUnidadSupervisor) {
         OrdenCompra oc = ocRepo.findByCodigoOrdenCompra(codOCautorizar)
                 .orElseThrow(() -> new ValdiviaOCException("OC "+ codOCautorizar +"no encontrada"));
 
@@ -353,23 +374,28 @@ public class OrdenCompraService {
         validarTransicionEstado(optStatusOrdenCompraActual.get().getEstadoOc().getIdEstadoOc(), 3);
 
         // obtener Usuarios OC
-        Usuarios usuarioPlantilla = usuariosRepository.findByUsername(plantillaDTO.getUsernameUsuario())
-                .orElseThrow(() -> new ValdiviaOCException("Usuario plantilla no encontrado: " + plantillaDTO.getUsernameUsuario()));
+        //Usuarios usuarioPlantilla = usuariosRepository.findByUsername(plantillaDTO.getUsernameUsuarioAutorizador())
+         //       .orElseThrow(() -> new ValdiviaOCException("Usuario plantilla no encontrado: " + plantillaDTO.getUsernameUsuarioAutorizador()));
         // obtener Usuarios Supervisor
-        Usuarios usuarioSup = usuariosRepository.findByUsername(usuarioSupervisor)
-                .orElseThrow(() -> new ValdiviaOCException("Usuario no encontrado: " + usuarioSupervisor));
+        Unidad unidadSupervisor = unidadRepository.findByCodigoUnidad
+                        (codUnidadSupervisor)
+                .orElseThrow(() -> new ValdiviaOCException("Unidad no encontrada: " + codUnidadSupervisor));
+        //oc.setIdUnidad(unidad.getIdUnidad());
 
-        validarUnidadSupervisor(usuarioPlantilla, usuarioSup);
-        oc.setUsernameAutorizador(usuarioSup.getUsername());
+        Usuarios usuarioAutorizador = usuariosRepository.findByUsernameAndIdUnidad(usernameSupervisor, unidadSupervisor)
+                .orElseThrow(() -> new ValdiviaOCException("Usuario no encontrado: " + usernameSupervisor));
+
+        oc.setIdUsuarioAutorizador(usuarioAutorizador.getIdUsuario());
+
         OrdenCompra saved = ocRepo.save(oc);
 
-        String observacionStatus = "Status Autorizada para la orden "+oc.getCodigoOrdenCompra() +" para el usuario "+ usuarioSupervisor;
-        EstadoOc estadoOc = registrarStatus(saved, STATUS_AUTORIZADO, usuarioSup.getIdUsuario(), observacionStatus);
+        String observacionStatus = "Status Autorizada para la orden "+oc.getCodigoOrdenCompra() +" por el usuario "+ usernameSupervisor;
+        EstadoOc estadoOc = registrarStatus(saved, STATUS_AUTORIZADO, usuarioAutorizador.getIdUsuario(), observacionStatus);
         plantillaDTO.setEstadoActualOc(estadoOc.getNombreEstadoOc());
         return plantillaDTO;
     }
     // ─── 5. Anular (estado 4 — bloquea la OC) ───────────────
-    public PlantillaDTO anular(String codOCanular, PlantillaDTO plantillaDTO,  String usuarioSupervisor) {
+    public PlantillaDTO anular(String codOCanular, PlantillaDTO plantillaDTO,  String usuarioSupervisor, String codUnidadSupervisor) {
         OrdenCompra oc = ocRepo.findByCodigoOrdenCompra(codOCanular)
                 .orElseThrow(() -> new ValdiviaOCException("OC "+ codOCanular +"no encontrada"));
 
@@ -380,24 +406,28 @@ public class OrdenCompraService {
         validarTransicionEstado(optStatusOrdenCompraActual.get().getEstadoOc().getIdEstadoOc(), 4);
 
         // actualizar datos de plantilla
-        Usuarios usuarioPlantilla = usuariosRepository.findByUsername(plantillaDTO.getUsernameUsuario())
-                .orElseThrow(() -> new ValdiviaOCException("Usuario plantilla no encontrado: " + plantillaDTO.getUsernameUsuario()));
+        /***Usuarios usuarioPlantilla = usuariosRepository.findByUsername(plantillaDTO.getUsernameUsuarioAnulador())
+                .orElseThrow(() -> new ValdiviaOCException("Usuario plantilla no encontrado: " + plantillaDTO.getUsernameUsuarioAnulador()));***/
         // obtener Usuarios Supervisor
-        Usuarios usuarioSup = usuariosRepository.findByUsername(usuarioSupervisor)
+        Unidad unidadSupervisor = unidadRepository.findByCodigoUnidad
+                        (codUnidadSupervisor)
+                .orElseThrow(() -> new ValdiviaOCException("Unidad no encontrada: " + codUnidadSupervisor));
+
+        Usuarios usuarioAnulador = usuariosRepository.findByUsernameAndIdUnidad(usuarioSupervisor, unidadSupervisor)
                 .orElseThrow(() -> new ValdiviaOCException("Usuario no encontrado: " + usuarioSupervisor));
 
-        validarUnidadSupervisor(usuarioPlantilla, usuarioSup);
-        oc.setUsernameAnulador(usuarioSup.getUsername());
+        oc.setIdUsuarioAnulador(usuarioAnulador.getIdUsuario());
+
         OrdenCompra saved = ocRepo.save(oc);
 
-        String observacionStatus = "Status Anular para la orden "+oc.getCodigoOrdenCompra() +" para el usuario "+ usuarioSupervisor;
-        EstadoOc estadoOc = registrarStatus(saved, STATUS_ANULADO, usuarioSup.getIdUsuario(), observacionStatus);
+        String observacionStatus = "Status Anular para la orden "+oc.getCodigoOrdenCompra() +" por el usuario "+ usuarioSupervisor;
+        EstadoOc estadoOc = registrarStatus(saved, STATUS_ANULADO, usuarioAnulador.getIdUsuario(), observacionStatus);
         plantillaDTO.setEstadoActualOc(estadoOc.getNombreEstadoOc());
         return plantillaDTO;
     }
 
     // ─── 6. Confirmar (estado 5 — bloquea la OC) ────────────
-    public PlantillaDTO confirmar(String codOCautorizar, PlantillaDTO plantillaDTO,  String usuarioSupervisor) {
+    public PlantillaDTO confirmar(String codOCautorizar, PlantillaDTO plantillaDTO,  String usernameSupervisor, String codUnidadSupervisor) {
         OrdenCompra oc = ocRepo.findByCodigoOrdenCompra(plantillaDTO.getCodOrdenCompra())
                 .orElseThrow(() -> new ValdiviaOCException("OC "+ codOCautorizar +"no encontrada"));
 
@@ -408,21 +438,27 @@ public class OrdenCompraService {
         validarTransicionEstado(optStatusOrdenCompraActual.get().getEstadoOc().getIdEstadoOc(), 5);
 
         // actualizar datos de plantilla
-        Usuarios usuarioPlantilla = usuariosRepository.findByUsername(plantillaDTO.getUsernameUsuario())
-                .orElseThrow(() -> new ValdiviaOCException("Usuario plantilla no encontrado: " + plantillaDTO.getUsernameUsuario()));
+        /***Usuarios usuarioPlantilla = usuariosRepository.findByUsername(plantillaDTO.getUsernameUsuarioConfirmador())
+                .orElseThrow(() -> new ValdiviaOCException("Usuario plantilla no encontrado: " + plantillaDTO.getUsernameUsuarioConfirmador()));***/
         // obtener Usuarios Supervisor
-        Usuarios usuarioSup = usuariosRepository.findByUsername(usuarioSupervisor)
-                .orElseThrow(() -> new ValdiviaOCException("Usuario no encontrado: " + usuarioSupervisor));
+        // obtener Usuarios Supervisor
+        Unidad unidadSupervisor = unidadRepository.findByCodigoUnidad
+                        (codUnidadSupervisor)
+                .orElseThrow(() -> new ValdiviaOCException("Unidad no encontrada: " + codUnidadSupervisor));
 
-        validarUnidadSupervisor(usuarioPlantilla, usuarioSup);
+        Usuarios usuarioConfirmar = usuariosRepository.findByUsernameAndIdUnidad(usernameSupervisor, unidadSupervisor)
+                .orElseThrow(() -> new ValdiviaOCException("Usuario no encontrado: " + usernameSupervisor));
+
+        oc.setIdUsuarioConfirmador(usuarioConfirmar.getIdUsuario());
+
+        //validarUnidadSupervisor(usuarioPlantilla, usuarioSup);
 
         validarNoSeBloqueada(oc);
         //validarUnidadSupervisor(oc.getUsuario(), usuarioSup);
-        oc.setUsernameConfirmador(usuarioSup.getUsername());
         OrdenCompra saved = ocRepo.save(oc);
 
-        String observacionStatus = "Status Confirmada para la orden "+oc.getCodigoOrdenCompra() +" para el usuario "+ usuarioSupervisor;
-        EstadoOc estadoOc = registrarStatus(saved, STATUS_CONFIRMADO, usuarioSup.getIdUsuario(), observacionStatus);
+        String observacionStatus = "Status Confirmada para la orden "+oc.getCodigoOrdenCompra() +" para el usuario "+ usernameSupervisor;
+        EstadoOc estadoOc = registrarStatus(saved, STATUS_CONFIRMADO, usuarioConfirmar.getIdUsuario(), observacionStatus);
         plantillaDTO.setEstadoActualOc(estadoOc.getNombreEstadoOc());
         /***
          * GenerarArchivo PDF para Plantilla
@@ -461,16 +497,6 @@ public class OrdenCompraService {
             imageBytesGerencia = is.readAllBytes();
         }
 
-//            byte[] imageBytesFirma;
-//            try (InputStream is = imgFileFirma.getInputStream()) {
-//                imageBytesFirma = is.readAllBytes();
-//            }
-
-//            byte[] imageBytesBci;
-//            try (InputStream is = imgFileBci.getInputStream()) {
-//                imageBytesBci = is.readAllBytes();
-//            }
-
         String base64Esc = Base64.getEncoder().encodeToString(imageBytesEsc);
         String base64Contabilidad = Base64.getEncoder().encodeToString(imageBytesContabilidad);
         String base64Gerencia = Base64.getEncoder().encodeToString(imageBytesGerencia);
@@ -498,24 +524,36 @@ public class OrdenCompraService {
             Page< PlantillaStatusDTO > pgPlantillaStatus = realizarBusquedaAvanzada(
                     optStatusOrdenCompraActual.get().getEstadoOc().getCodigoEstadoOc(), oc.getProveedor().getRutProveedor(),
                     null, oc.getCodigoOrdenCompra(), null, null, PageRequest.of(0, 1));
+            Usuarios usuarioCreador  = null;
+            Usuarios usuarioSolicitante  = null;
             Usuarios usuarioAutorizador  = null;
             Usuarios usuarioAnulador  = null;
             Usuarios usuarioConfirmador  = null;
 
             PlantillaStatusImpresionDTO plantillaStatusImpresionDTO = new PlantillaStatusImpresionDTO(pgPlantillaStatus.getContent().get(0));
 
-            if(oc.getUsernameAutorizador()!=null){
-                usuarioAutorizador  = usuariosRepository.findByUsername(oc.getUsernameAutorizador()).get();
+            if(oc.getIdUsuarioCreador()!=null){
+                usuarioCreador  = usuariosRepository.findById(oc.getIdUsuarioCreador()).get();
+                plantillaStatusImpresionDTO.setUsuarioCreador(usuarioCreador.getNombreMember().concat(" ").concat(usuarioCreador.getApellidoPaternoMember()));
+            }
+
+            if(oc.getIdUsuarioSolicitante()!=null){
+                usuarioSolicitante  = usuariosRepository.findById(oc.getIdUsuarioSolicitante()).get();
+                plantillaStatusImpresionDTO.setUsuarioSolicitante(usuarioSolicitante.getNombreMember().concat(" ").concat(usuarioSolicitante.getApellidoPaternoMember()));
+            }
+
+            if(oc.getIdUsuarioAutorizador()!=null){
+                usuarioAutorizador  = usuariosRepository.findById(oc.getIdUsuarioAutorizador()).get();
                 plantillaStatusImpresionDTO.setUsuarioAutorizador(usuarioAutorizador.getNombreMember().concat(" ").concat(usuarioAutorizador.getApellidoPaternoMember()));
             }
 
-            if(oc.getUsernameAnulador()!=null){
-                usuarioAnulador  = usuariosRepository.findByUsername(oc.getUsernameAnulador()).get();
+            if(oc.getIdUsuarioAnulador()!=null){
+                usuarioAnulador  = usuariosRepository.findById(oc.getIdUsuarioAnulador()).get();
                 plantillaStatusImpresionDTO.setUsuarioAnulador(usuarioAnulador.getNombreMember().concat(" ").concat(usuarioAnulador.getApellidoPaternoMember()));
             }
 
-            if(oc.getUsernameConfirmador()!=null){
-                usuarioConfirmador  = usuariosRepository.findByUsername(oc.getUsernameConfirmador()).get();
+            if(oc.getIdUsuarioConfirmador()!=null){
+                usuarioConfirmador  = usuariosRepository.findById(oc.getIdUsuarioConfirmador()).get();
                 plantillaStatusImpresionDTO.setUsuarioConfirmador(usuarioConfirmador.getNombreMember().concat(" ").concat(usuarioConfirmador.getApellidoPaternoMember()));
             }
 
@@ -531,8 +569,6 @@ public class OrdenCompraService {
                 plantillaStatusImpresionDTO.setNombreRegionProveedor(optRegiones.get().getNombreRegion());
                 plantillaStatusImpresionDTO.setNombreComunaProveedor(optComunas.get().getNombreComuna());
             }
-
-
 
             String html = "";
             if(optStatusOrdenCompraActual.get().getEstadoOc().getIdEstadoOc() == 4L){
@@ -656,14 +692,6 @@ public class OrdenCompraService {
         // Asumiendo que guardas los items como JSON String en la BD
         dto.setListProductosOrden(oc.getListProductosOrden());
 
-        // --- Datos del Usuario (JOIN FETCH oc.usuario) ---
-        if (oc.getIdUsuario() != null) {
-            Optional < Usuarios > optUsuarios = usuariosRepository.findById(oc.getIdUsuario());
-            if (optUsuarios.isPresent()) {
-                dto.setUsernameUsuario(optUsuarios.get().getUsername()); // Para compatibilidad con PlantillaDTO
-            }
-
-        }
 
         // --- Datos de la Unidad (JOIN FETCH oc.unidad) ---
         if (oc.getIdUnidad() != null) {
@@ -673,6 +701,16 @@ public class OrdenCompraService {
                 //dto.setUnidad(optUnidad.get().getNombreUnidad());
             }
         }
+
+        // --- Datos del Usuario (JOIN FETCH oc.usuario) ---
+        /***if (oc.getIdUsuarioCreador() != null) {
+            Optional < Usuarios > optUsuarios = usuariosRepository.findById(oc.getIdUsuarioCreador());
+            if (optUsuarios.isPresent()) {
+                dto.setU(optUsuarios.get().getUsername()); // Para compatibilidad con PlantillaDTO
+            }
+        }***/
+
+
         // --- Datos del Proveedor (JOIN FETCH oc.proveedor) ---
         if (oc.getProveedor() != null) {
             dto.setRutProveedor(oc.getProveedor().getRutProveedor());
@@ -712,16 +750,44 @@ public class OrdenCompraService {
         // Asumiendo que guardas los items como JSON String en la BD
         dto.setListProductosOrden(oc.getListProductosOrden());
 
-        // --- Datos del Usuario (JOIN FETCH oc.usuario) ---
-        if (oc.getIdUsuario() != null) {
-            Optional < Usuarios > optUsuarios = usuariosRepository.findById(oc.getIdUsuario());
-            if (optUsuarios.isPresent()) {
-                dto.setUsernameUsuario(optUsuarios.get().getUsername());
-                dto.setNombreUsuario(optUsuarios.get().getNombreMember());
-                dto.setApellidoUsuario(optUsuarios.get().getApellidoPaternoMember());
-                dto.setUsernameUsuario(optUsuarios.get().getUsername()); // Para compatibilidad con PlantillaDTO
+        if (oc.getIdUsuarioCreador() != null) {
+            Optional<Usuarios> optUsuarioCreador = usuariosRepository.findById(oc.getIdUsuarioCreador());
+            if (optUsuarioCreador.isPresent()) {
+                dto.setNombreUsuarioCreador(optUsuarioCreador.get().getNombreMember());
+                dto.setApellidoUsuarioCreador(optUsuarioCreador.get().getApellidoPaternoMember());
             }
+        }
 
+        if (oc.getIdUsuarioSolicitante() != null) {
+            Optional<Usuarios> optUsuarioSolicitante = usuariosRepository.findById(oc.getIdUsuarioSolicitante());
+            if (optUsuarioSolicitante.isPresent()) {
+                dto.setNombreUsuarioSolicitante(optUsuarioSolicitante.get().getNombreMember());
+                dto.setApellidoUsuarioSolicitante(optUsuarioSolicitante.get().getApellidoPaternoMember());
+            }
+        }
+
+        if (oc.getIdUsuarioAutorizador() != null) {
+            Optional<Usuarios> optUsuarioAutorizador = usuariosRepository.findById(oc.getIdUsuarioAutorizador());
+            if (optUsuarioAutorizador.isPresent()) {
+                dto.setNombreUsuarioAutorizador(optUsuarioAutorizador.get().getNombreMember());
+                dto.setApellidoUsuarioAutorizador(optUsuarioAutorizador.get().getApellidoPaternoMember());
+            }
+        }
+
+        if (oc.getIdUsuarioAnulador() != null) {
+            Optional<Usuarios> optUsuarioAnulador = usuariosRepository.findById(oc.getIdUsuarioAnulador());
+            if (optUsuarioAnulador.isPresent()) {
+                dto.setNombreUsuarioAutorizador(optUsuarioAnulador.get().getNombreMember());
+                dto.setApellidoUsuarioAutorizador(optUsuarioAnulador.get().getApellidoPaternoMember());
+            }
+        }
+
+        if (oc.getIdUsuarioConfirmador() != null) {
+            Optional<Usuarios> optUsuarioConfirmador = usuariosRepository.findById(oc.getIdUsuarioConfirmador());
+            if (optUsuarioConfirmador.isPresent()) {
+                dto.setNombreUsuarioConfirmador(optUsuarioConfirmador.get().getNombreMember());
+                dto.setApellidoUsuarioConfirmador(optUsuarioConfirmador.get().getApellidoPaternoMember());
+            }
         }
 
         // --- Datos de la Unidad (JOIN FETCH oc.unidad) ---
@@ -744,6 +810,16 @@ public class OrdenCompraService {
             //dto.setComunaProveedor(oc.getProveedor().getIdComuna().getNombreComuna());
             //dto.setRegionProveedor(oc.getProveedor().getIdComuna().getRegion().getNombreRegion()) ;
             dto.setRutProveedor(oc.getProveedor().getRutProveedor());
+
+            Optional<Comunas> optComunas = comunasRepository.findById(oc.getProveedor().getIdComuna());
+            Optional<Regiones> optRegiones = regionesRepository.findById(optComunas.get().getRegion().getIdRegion());
+
+            dto.setCodRegionProveedor(optRegiones.get().getCodigoRegion());
+            dto.setCodComunaProveedor(optComunas.get().getCodigoComuna());
+            dto.setNombreRegionProveedor(optRegiones.get().getNombreRegion());
+            dto.setNombreComunaProveedor(optComunas.get().getNombreComuna());
+
+
         }
 
         if (oc.getCodigoGiroProveedor() != null) {
@@ -778,18 +854,18 @@ public class OrdenCompraService {
     /******************************************************************************************************/
     /******************************************************************************************************/
     /******************************************************************************************************/
-    public AdjuntoDTO guardarAdjunto(String codigoOrdenCompra, PlantillaDTO plantillaDTO, MultipartFile file) throws IOException {
+    public AdjuntoDTO guardarAdjunto(String codigoOrdenCompra, String username, MultipartFile file) throws IOException {
 
         OrdenCompra oc = null;
         Usuarios usuario = null;
 
-        if (plantillaDTO.getCodOrdenCompra() != null && !plantillaDTO.getCodOrdenCompra().equals("")) {
+        if (codigoOrdenCompra != null && !codigoOrdenCompra.equals("")) {
             oc = ocRepo.findByCodigoOrdenCompra(codigoOrdenCompra)
                     .orElseThrow(() -> new ValdiviaOCException("OC " + codigoOrdenCompra + " no encontrada"));
         }
 
-        if (plantillaDTO.getUsernameUsuario() != null && !plantillaDTO.getUsernameUsuario().equals("")) {
-            Optional<Usuarios> optUsuario = usuariosRepository.findByUsername(plantillaDTO.getUsernameUsuario());
+        if (username != null && !username.equals("")) {
+            Optional<Usuarios> optUsuario = usuariosRepository.findByUsername(username);
             usuario = optUsuario.isPresent() ? optUsuario.get() : Usuarios.builder().build();
         }
 
@@ -868,6 +944,40 @@ public class OrdenCompraService {
                 .orElseThrow(() -> new ValdiviaOCException("Registro de adjunto no encontrado en BD"));
     }
 
+    @Transactional
+    public boolean eliminarAdjuntoPorId(Integer idAdjunto) {
+        log.info("[Adjuntos] Iniciando proceso de eliminación para el ID: {}", idAdjunto);
+
+        // 1. Reutilizar tu método para buscar el adjunto en la Base de Datos
+        AdjuntoOrdenCompra adjunto = this.buscarAdjuntoPorId(idAdjunto);
+
+        // 2. Intentar borrar el archivo físico del disco rígido
+        try {
+            // Combinamos la ruta base configurada en apiProperties con la sub-ruta del registro
+            Path rutaArchivoFisico = Paths.get(apiProperties.getArchivoCarpetaPublic(), adjunto.getRutaArchivo())
+                    .toAbsolutePath()
+                    .normalize();
+
+            if (Files.exists(rutaArchivoFisico)) {
+                Files.delete(rutaArchivoFisico);
+                log.info("[Adjuntos] Archivo físico eliminado con éxito del servidor: {}", rutaArchivoFisico);
+            } else {
+                log.warn("[Adjuntos] El archivo físico no existía en la ruta esperada: {}", rutaArchivoFisico);
+            }
+        } catch (IOException e) {
+            // Logeamos la falla como advertencia para que no interrumpa la limpieza de la Base de Datos
+            // (Por si el archivo fue movido o borrado manualmente en el servidor)
+            log.error("[Adjuntos] Error al intentar eliminar el archivo físico del disco: {}", e.getMessage());
+        }
+
+        // 3. Eliminar el registro lógicamente/físicamente de la Base de Datos
+        adjuntoOrdenCompraRepository.delete(adjunto);
+
+        log.info("[Adjuntos] Registro de adjunto ID {} eliminado exitosamente de la base de datos.", idAdjunto);
+
+        return true;
+    }
+
     public InfoDescargaArchivoDTO prepararDescargaUniversal(String subPath, String xForwardedFor) throws IOException {
 
         AdjuntoOrdenCompra adjuntoOrdenCompra = buscarAdjuntoPorId(Integer.parseInt(subPath));
@@ -899,6 +1009,32 @@ public class OrdenCompraService {
             // 💻 DESARROLLO LOCAL (Cargamos el recurso físico en memoria controlada por Spring)
             Resource resource = new UrlResource(filePath.toUri());
             return new InfoDescargaArchivoDTO(resource, contentType, fileName, null);
+        }
+    }
+
+    public void limpiarCarpetaOrdenCompra(String codigoOrdenCompra){
+        try{
+            Path rutaCarpetaOC = Paths.get(apiProperties.getArchivoCarpetaPublic(), codigoOrdenCompra).toAbsolutePath().normalize();
+            if (Files.exists(rutaCarpetaOC)) {
+                log.info("[Adjuntos] Limpiando carpeta existente para la OC: {}", codigoOrdenCompra);
+
+                // Caminamos por el directorio. El filtro evita que la carpeta raíz se borre a sí misma
+                Files.walk(rutaCarpetaOC)
+                        .filter(path -> !path.equals(rutaCarpetaOC))
+                        .map(Path::toFile)
+                        .forEach(file -> {
+                            if (file.delete()) {
+                                log.debug("[Adjuntos] Archivo temporal eliminado: {}", file.getName());
+                            } else {
+                                log.warn("[Adjuntos] No se pudo eliminar el archivo: {}", file.getName());
+                            }
+                        });
+            } else {
+                // 3. Si no existe (es una OC nueva sin borradores previos), la creamos
+                Files.createDirectories(rutaCarpetaOC);
+            }
+        } catch (IOException e) {
+            log.info("Error al Crear Carpeta de OC: " + e.getMessage());
         }
     }
 

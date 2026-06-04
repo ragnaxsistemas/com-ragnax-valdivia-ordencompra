@@ -8,12 +8,30 @@ import lombok.NoArgsConstructor;
 @Data @NoArgsConstructor @AllArgsConstructor
 public class PlantillaStatusDTO extends PlantillaDTO {
 
-    private String apellidoUsuario;
-    private String nombreUsuario;
+    //Usuarios
+    private String apellidoUsuarioCreador;
+    private String nombreUsuarioCreador;
 
+    private String apellidoUsuarioSolicitante;
+    private String nombreUsuarioSolicitante;
+
+    private String apellidoUsuarioAutorizador;
+    private String nombreUsuarioAutorizador;
+
+    private String apellidoUsuarioAnulador;
+    private String nombreUsuarioAnulador;
+
+    private String apellidoUsuarioConfirmador;
+    private String nombreUsuarioConfirmador;
+
+    //Unidad
     private String nombreUnidad;
 
-    //private String rutProveedor;
+    //DTE
+    private String descripcionDocumentoElectronico;
+    private String impuestoDocumentoElectronico;
+
+    //PROVEEDOR
     private String nombreProveedor;
     private String razonSocialProveedor;
     private String direccionProveedor;
@@ -25,10 +43,7 @@ public class PlantillaStatusDTO extends PlantillaDTO {
     private String nombreRegionProveedor;
     private String nombreComunaProveedor;
 
-    //private Integer idDocumentoElectronico;
-    //private String nombreDocumentoElectronico;
-    private String descripcionDocumentoElectronico;
-    private String impuestoDocumentoElectronico;
+
 
 
 }

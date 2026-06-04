@@ -8,8 +8,6 @@ import lombok.NoArgsConstructor;
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class PlantillaDTO {
 
-    private String usernameUsuario;
-
     private String codUnidad;
 
     private String rutProveedor;
@@ -24,7 +22,7 @@ public class PlantillaDTO {
     private String fechaOrdenCompra;
 
     private String codEstadoActualOc;
-    private String estadoActualOc; //Nombre
+    private String estadoActualOc; //Estado
 
     private String nombreOrdenCompra;
 

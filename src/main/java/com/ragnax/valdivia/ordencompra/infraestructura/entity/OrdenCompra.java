@@ -27,8 +27,8 @@ public class OrdenCompra {
     @Column(name = "id_unidad")
     private Integer idUnidad;
 
-    @Column(name = "id_usuario", nullable = false)
-    private Integer idUsuario;
+    /***@Column(name = "id_usuario_solicitante", nullable = false)
+    private Integer idUsuario;***/
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_id_proveedor",
@@ -60,14 +60,20 @@ public class OrdenCompra {
     @Column(name = "total")
     private Integer total;
 
-    @Column(name = "username_autorizador")
-    private String usernameAutorizador;
+    @Column(name = "id_usuario_creador", nullable = false)
+    private Integer idUsuarioCreador;
 
-    @Column(name = "username_anulador")
-    private String usernameAnulador;
+    @Column(name = "id_usuario_solicitante")
+    private Integer idUsuarioSolicitante;
 
-    @Column(name = "username_confirmador")
-    private String usernameConfirmador;
+    @Column(name = "id_usuario_autorizador")
+    private Integer idUsuarioAutorizador;
+
+    @Column(name = "id_usuario_anulador")
+    private Integer idUsuarioAnulador;
+
+    @Column(name = "id_usuario_confirmador")
+    private Integer idUsuarioConfirmador;
 
     @Column(name = "fecha_creacion", insertable = false, updatable = false)
     private LocalDateTime fechaCreacion;

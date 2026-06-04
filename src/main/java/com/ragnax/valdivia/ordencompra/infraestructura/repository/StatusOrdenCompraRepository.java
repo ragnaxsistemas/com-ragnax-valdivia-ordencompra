@@ -15,14 +15,14 @@ public interface StatusOrdenCompraRepository extends JpaRepository<StatusOrdenCo
 
     // Devuelve el registro de status más reciente de una OC
     @Query("""
-        SELECT s FROM StatusOrdenCompra s
-        WHERE s.ordenCompra.idOrdenCompra = :idOC
-        AND s.fechaEvento = (
-            SELECT MAX(s2.fechaEvento)
-            FROM StatusOrdenCompra s2
-            WHERE s2.ordenCompra.idOrdenCompra = :idOC
-        )
-    """)
+    SELECT s FROM StatusOrdenCompra s
+    WHERE s.ordenCompra.idOrdenCompra = :idOC
+    AND s.idStatusOrdenCompra = (
+        SELECT MAX(s2.idStatusOrdenCompra)
+        FROM StatusOrdenCompra s2
+        WHERE s2.ordenCompra.idOrdenCompra = :idOC
+    )
+""")
     Optional<StatusOrdenCompra> findStatusActual(@Param("idOC") Long idOC);
 
     Optional<StatusOrdenCompra> findByOrdenCompraAndEstadoOc(OrdenCompra ordenCompra,  EstadoOc estadoOc);

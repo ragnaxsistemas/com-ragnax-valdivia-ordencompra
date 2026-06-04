@@ -15,7 +15,6 @@
             font-size: 11px;
         }
 
-        /* Contenedor relativo indispensable para que la marca de agua absolute se centre aquí */
         .oc-container {
             position: relative;
             max-width: 850px;
@@ -26,16 +25,17 @@
             border-top: 6px solid #f2a900;
         }
 
-        /* MARCA DE AGUA OPTIMIZADA PARA MOTORES DE PDF */
+        /* MARCA DE AGUA ANULADA */
         .watermark {
-            position: absolute;
-            margin-top: 100px;
-            top: 40%;                  /* Baja la marca de agua al tercio central de la hoja */
-            left: 15%;                 /* La ancla firmemente hacia la izquierda */
-            transform: rotate(-30deg); /* Inclinación limpia */
 
+            position: absolute;
+            margin-top: 150px;
+            margin-left: 100px;
+            top: 50%; /* Baja la marca de agua al tercio central de la hoja */
+            left: 50%; /* La ancla firmemente hacia la izquierda */
+            transform: rotate(-30deg); /* Inclinación limpia */
             /* Tipografía y apariencia */
-            font-size: 110px;          /* Tamaño corregido para evitar desbordes */
+            font-size: 110px; /* Tamaño corregido para evitar desbordes */
             font-weight: bold;
             color: rgba(211, 47, 47, 0.14); /* Rojo tenue que no interfiere con los datos */
             border: 12px solid rgba(211, 47, 47, 0.14);
@@ -43,21 +43,13 @@
             text-transform: uppercase;
             white-space: nowrap;
             border-radius: 15px;
-
             /* Capas y comportamiento */
             z-index: 1000;
             pointer-events: none;
             user-select: none;
         }
 
-        @media print {
-            .watermark {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
-        }
-
-        /* --- TABLA ESTRUCTURAL PARA EL HEADER --- */
+        /* --- HEADER --- */
         .header-table {
             width: 100%;
             border-collapse: collapse;
@@ -69,28 +61,10 @@
             padding: 0;
             vertical-align: top;
         }
-
-        .logo-section {
-            text-align: center;
-            width: 220px;
-        }
-
-        .oc-info {
-            text-align: right;
-        }
-
-        .oc-title {
-            font-size: 18px;
-            font-weight: bold;
-            color: #000;
-            margin: 0;
-        }
-
-        .oc-number {
-            color: #d32f2f;
-            font-weight: bold;
-            font-size: 15px;
-        }
+        .logo-section { text-align: center; width: 220px; }
+        .oc-info { text-align: right; }
+        .oc-title { font-size: 18px; font-weight: bold; color: #000; margin: 0; }
+        .oc-number { color: #d32f2f; font-weight: bold; font-size: 15px; }
 
         .section-title {
             background-color: #eeeeee;
@@ -101,25 +75,17 @@
             font-size: 11px;
         }
 
-        /* --- TABLA ESTRUCTURAL DE PROVEEDOR --- */
+        /* --- PROVEEDOR --- */
         .provider-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 3px;
             margin-bottom: 8px;
         }
-        .provider-table td {
-            padding: 3px 6px;
-            font-size: 11px;
-            border: none;
-            vertical-align: top;
-        }
-        .provider-table .label {
-            font-weight: bold;
-            width: 110px;
-        }
+        .provider-table td { padding: 3px 6px; font-size: 11px; border: none; vertical-align: top; }
+        .provider-table .label { font-weight: bold; width: 110px; }
 
-        /* --- TABLA DE PRODUCTOS --- */
+        /* --- PRODUCTOS --- */
         .products-table {
             width: 100%;
             border-collapse: collapse;
@@ -131,40 +97,15 @@
             padding: 5px 6px;
             font-size: 11px;
         }
-        .products-table td {
-            border: 1px solid #ccc;
-            padding: 4px 6px;
-            font-size: 11px;
-        }
+        .products-table td { border: 1px solid #ccc; padding: 4px 6px; font-size: 11px; }
 
-        /* --- TABLA DE TOTALES COALINEADA --- */
-        .totals-container {
-            margin-top: 6px;
-            text-align: right;
-        }
-        .totals-table {
-            width: 240px; /* Más angosta */
-            margin-left: auto;
-            border-collapse: collapse;
-        }
-        .totals-table td {
-            border: 1px solid #ccc;
-            padding: 5px;
-            font-size: 11px;
-            font-weight: bold;
-        }
-        .col-label-total {
-            width: 100px;
-            text-align: left;
-        }
-        .col-value-total {
-            width: 100px;
-            text-align: right;
-        }
+        /* --- TOTALES --- */
+        .totals-container { margin-top: 6px; text-align: right; }
+        .totals-table { width: 240px; margin-left: auto; border-collapse: collapse; }
+        .totals-table td { border: 1px solid #ccc; padding: 5px; font-size: 11px; font-weight: bold; }
 
-        .observations-container {
-            margin-top: 3px;
-        }
+        /* --- OBSERVACIONES --- */
+        .observations-container { margin-top: 3px; margin-bottom: 5px; }
         .observations-textarea {
             width: 100%;
             height: 50px;
@@ -177,61 +118,54 @@
             display: block;
         }
 
-        /* --- TABLA CUÁDRUPLE DE FIRMAS COMPACTA --- */
-        .cuadruple-table {
+        /* --- SECCIÓN DE FIRMAS ORILLADAS (CONTABILIDAD Y GERENCIA) --- */
+        .firmas-container-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 12px;
+            margin-top: 25px;
+            margin-bottom: 15px;
         }
-
-        .signature-area td {
-            width: 25%;
-            border-left: 1px solid #ccc;
-            border-right: 1px solid #ccc;
-            border-top: 1px solid #ccc;
-            height: 50px;
+        .firma-block-cell {
+            width: 35%;
+            padding: 0;
+            vertical-align: bottom;
             text-align: center;
-            vertical-align: middle;
-            padding: 2px;
         }
-
-        .label-area td {
-            width: 25%;
-            border-left: 1px solid #ccc;
-            border-right: 1px solid #ccc;
-            border-bottom: 1px solid #ccc;
-            border-top: 1px solid #ccc;
-            background-color: #fff;
+        .firma-spacer-cell { width: 30%; }
+        .firma-espacio-timbre {
+            height: 60px;
+            display: block;
             text-align: center;
-            padding: 3px 2px;
+            vertical-align: bottom;
         }
-
+        .firma-linea-texto {
+            border-top: 1px solid #000000;
+            padding-top: 6px;
+            display: block;
+        }
         .item-label {
             font-weight: bold;
-            font-size: 9px;
+            font-size: 10px;
             color: #000;
             text-transform: uppercase;
-            display: block;
         }
 
         .footer {
-            margin-top: 12px;
+            margin-top: 20px;
             padding-top: 6px;
             border-top: 1px solid #eee;
             text-align: center;
             font-size: 10px;
             color: #666;
         }
-        .footer p {
-            margin: 2px 0;
-        }
+        .footer p { margin: 2px 0; }
     </style>
 </head>
 <body>
 
 <div class="oc-container">
 
-    <div class="watermark">ANULADA</div>
+    <div class="watermark">NULA</div>
 
     <table class="header-table">
         <tr>
@@ -308,16 +242,16 @@
     <div class="totals-container">
         <table class="totals-table">
             <tr>
-                <td class="col-label-total" style="background-color: #f8f8f8;">{{TITULO_NETO_OC}}</td>
-                <td class="col-value-total">{{VALOR_TOTAL_NETO_OC}}</td>
+                <td style="background-color: #f8f8f8; width: 55%; text-align: left;">{{TITULO_NETO_OC}}</td>
+                <td style="text-align: right;">{{VALOR_TOTAL_NETO_OC}}</td>
             </tr>
             <tr>
-                <td class="col-label-total" style="background-color: #f8f8f8;">{{TITULO_IMPUESTO_OC}}</td>
-                <td class="col-value-total">{{VALOR_IMPUESTO_OC}}</td>
+                <td style="background-color: #f8f8f8; text-align: left;">{{TITULO_IMPUESTO_OC}}</td>
+                <td style="text-align: right;">{{VALOR_IMPUESTO_OC}}</td>
             </tr>
             <tr>
-                <td class="col-label-total" style="background-color: #eee;">{{TITULO_TOTAL_OC}}</td>
-                <td class="col-value-total" style="background-color: #eee;">{{VALOR_TOTAL_OC}}</td>
+                <td style="background-color: #eee; text-align: left;">{{TITULO_TOTAL_OC}}</td>
+                <td style="background-color: #eee; text-align: right;">{{VALOR_TOTAL_OC}}</td>
             </tr>
         </table>
     </div>
@@ -327,18 +261,31 @@
         <textarea class="observations-textarea" readonly>{{OBSERVACIONES_OC}}</textarea>
     </div>
 
-    <table class="cuadruple-table">
-        <tr class="signature-area">
-            <td></td>
-            <td>{{TIMBRE_CONTABILIDAD}}</td>
-            <td>{{TIMBRE_GERENCIA}}</td>
-            <td></td>
-        </tr>
-        <tr class="label-area">
-            <td><span class="item-label">UNIDAD DE COMPRAS</span></td>
-            <td><span class="item-label">CONTABILIDAD Y FINANZAS</span></td>
-            <td><span class="item-label">GERENCIA</span></td>
-            <td><span class="item-label">UNIDAD REQUIRENTE</span></td>
+    <!-- SECCIÓN DE FIRMAS EXCLUSIVA: CONTABILIDAD Y GERENCIA -->
+    <table class="firmas-container-table">
+        <tr>
+            <!-- CONTABILIDAD Y FINANZAS (IZQUIERDA) -->
+            <td class="firma-block-cell">
+                <div class="firma-espacio-timbre">
+                    {{TIMBRE_CONTABILIDAD}}
+                </div>
+                <div class="firma-linea-texto">
+                    <span class="item-label">CONTABILIDAD Y FINANZAS</span>
+                </div>
+            </td>
+
+            <!-- ESPACIADOR CENTRAL -->
+            <td class="firma-spacer-cell"></td>
+
+            <!-- GERENCIA (DERECHA) -->
+            <td class="firma-block-cell">
+                <div class="firma-espacio-timbre">
+                    {{TIMBRE_GERENCIA}}
+                </div>
+                <div class="firma-linea-texto">
+                    <span class="item-label">GERENCIA</span>
+                </div>
+            </td>
         </tr>
     </table>
 

@@ -117,16 +117,16 @@ public class OrdenCompraController {
     @PostMapping("/ordenes-compra/new")
     public ResponseEntity<PlantillaDTO> generarOC(
             @RequestBody OrdenCompraRequest req) {
-        PlantillaDTO oc = ordenCompraService.generarOC(req.getPlantillaDTO());
+        PlantillaDTO oc = ordenCompraService.generarOC(req.getPlantillaDTO(), req.getUsuarioExec());
         return ResponseEntity.status(HttpStatus.CREATED).body(oc);
     }
 
     /** POST /api/ordenes-compra
      *  Body: { ordenCompra, usuario } */
     @PostMapping("/ordenes-compra")
-    public ResponseEntity<PlantillaDTO> guardar(
+    public ResponseEntity<PlantillaStatusDTO> guardar(
             @RequestBody OrdenCompraRequest req) {
-        PlantillaDTO oc = ordenCompraService.guardar(req.getPlantillaDTO());
+        PlantillaStatusDTO oc = ordenCompraService.guardar(req.getPlantillaDTO(), req.getUsuarioExec());
         return ResponseEntity.status(HttpStatus.OK).body(oc);
     }
 
@@ -134,7 +134,7 @@ public class OrdenCompraController {
     public ResponseEntity<PlantillaDTO> solicitar(
             @RequestBody OrdenCompraRequest req) {
         return ResponseEntity.ok(
-                ordenCompraService.solicitarAutorizacion(req.getPlantillaDTO()));
+                ordenCompraService.solicitarAutorizacion(req.getPlantillaDTO(), req.getUsuarioExec(), req.getUnidadExec()));
         //return   ResponseEntity.ok(null);
     }
 
@@ -143,7 +143,7 @@ public class OrdenCompraController {
     public ResponseEntity<PlantillaDTO> devolver(
             @RequestBody OrdenCompraRequest req) {
         return ResponseEntity.ok(
-                ordenCompraService.devolver(req.getCodOc(), req.getPlantillaDTO(), req.getUsuarioSup()));
+                ordenCompraService.devolver(req.getCodOc(), req.getPlantillaDTO(), req.getUsuarioExec(), req.getUnidadExec()));
         //return   ResponseEntity.ok(null);
     }
 
@@ -152,7 +152,7 @@ public class OrdenCompraController {
     public ResponseEntity<PlantillaDTO> autorizar(
             @RequestBody OrdenCompraRequest req) {
         return ResponseEntity.ok(
-                ordenCompraService.autorizar(req.getCodOc(), req.getPlantillaDTO(), req.getUsuarioSup()));
+                ordenCompraService.autorizar(req.getCodOc(), req.getPlantillaDTO(), req.getUsuarioExec(), req.getUnidadExec()));
         //return   ResponseEntity.ok(null);
     }
 
@@ -161,7 +161,7 @@ public class OrdenCompraController {
     public ResponseEntity<PlantillaDTO> anular(
             @RequestBody OrdenCompraRequest req) {
         return ResponseEntity.ok(
-                ordenCompraService.anular(req.getCodOc(), req.getPlantillaDTO(), req.getUsuarioSup()));
+                ordenCompraService.anular(req.getCodOc(), req.getPlantillaDTO(), req.getUsuarioExec(), req.getUnidadExec()));
         //return   ResponseEntity.ok(null);
     }
 
@@ -170,7 +170,7 @@ public class OrdenCompraController {
     public ResponseEntity<PlantillaDTO> confirmar(
             @RequestBody OrdenCompraRequest req) {
         return ResponseEntity.ok(
-                ordenCompraService.confirmar(req.getCodOc(), req.getPlantillaDTO(), req.getUsuarioSup()));
+                ordenCompraService.confirmar(req.getCodOc(), req.getPlantillaDTO(), req.getUsuarioExec(), req.getUnidadExec()));
     }
 
     /** PATCH /api/ordenes-compra/{id}/confirmar */
@@ -178,77 +178,77 @@ public class OrdenCompraController {
     public ResponseEntity<byte[]> generarDocumentoOc(
             @RequestBody OrdenCompraRequest req) throws Exception {
 
-            DocumentoOrdenCompra documentoOrdenCompra =
-                    ordenCompraService.generarDocumentoOc(req.getCodOc(), req.getPlantillaDTO());
+        DocumentoOrdenCompra documentoOrdenCompra =
+                ordenCompraService.generarDocumentoOc(req.getCodOc(), req.getPlantillaDTO());
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_PDF);
-            String filename = "";
-            if(documentoOrdenCompra.getCodEstadoOc().equals("anulado")){
-                 filename = "ANULADA_" + req.getCodOc() + ".pdf";
-            }else if(documentoOrdenCompra.getCodEstadoOc().equals("confirmada")){
-                 filename = "CONFIRMADA_" + req.getCodOc() + ".pdf";
-            }else {
-                throw new Exception("Documento no encontrado");
-            }
-            headers.setContentDispositionFormData("attachment", filename);
-            headers.add("Access-Control-Expose-Headers", "Content-Disposition");
-            headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        String filename = "";
+        if(documentoOrdenCompra.getCodEstadoOc().equals("anulado")){
+            filename = "ANULADA_" + req.getCodOc() + ".pdf";
+        }else if(documentoOrdenCompra.getCodEstadoOc().equals("confirmada")){
+            filename = "CONFIRMADA_" + req.getCodOc() + ".pdf";
+        }else {
+            throw new Exception("Documento no encontrado");
+        }
+        headers.setContentDispositionFormData("attachment", filename);
+        headers.add("Access-Control-Expose-Headers", "Content-Disposition");
+        headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
 
-            return new ResponseEntity<>(documentoOrdenCompra.getDocByte(), headers, HttpStatus.OK);
+        return new ResponseEntity<>(documentoOrdenCompra.getDocByte(), headers, HttpStatus.OK);
 
     }
 
 
 
-        @GetMapping("/ordenes-compra/busqueda-avanzada")
-        public ResponseEntity<Page<PlantillaStatusDTO>> buscar(
-                @RequestParam(required = false) String codEstadoOc,
-                @RequestParam(required = false) String rut,
-                @RequestParam(required = false) String unidad,
-                @RequestParam(required = false) String codOrdenCompra,
-                @RequestParam(required = false) String fechaInicioStr,
-                @RequestParam(required = false) String fechaFinStr,
-                @PageableDefault(size = 10, sort = "idOrdenCompra") Pageable pageable
+    @GetMapping("/ordenes-compra/busqueda-avanzada")
+    public ResponseEntity<Page<PlantillaStatusDTO>> buscar(
+            @RequestParam(required = false) String codEstadoOc,
+            @RequestParam(required = false) String rut,
+            @RequestParam(required = false) String unidad,
+            @RequestParam(required = false) String codOrdenCompra,
+            @RequestParam(required = false) String fechaInicioStr,
+            @RequestParam(required = false) String fechaFinStr,
+            @PageableDefault(size = 10, sort = "idOrdenCompra") Pageable pageable
     ) {
-            Page<PlantillaStatusDTO> resultados = ordenCompraService.realizarBusquedaAvanzada(
-                    codEstadoOc, rut, unidad, codOrdenCompra, fechaInicioStr, fechaFinStr, pageable
-            );
-            //return   ResponseEntity.ok(null);
-            return ResponseEntity.ok(resultados);
+        Page<PlantillaStatusDTO> resultados = ordenCompraService.realizarBusquedaAvanzada(
+                codEstadoOc, rut, unidad, codOrdenCompra, fechaInicioStr, fechaFinStr, pageable
+        );
+        //return   ResponseEntity.ok(null);
+        return ResponseEntity.ok(resultados);
+    }
+
+    /****************** Archivos Adjuntos a OC ****************/
+    /****************** Archivos Adjuntos a OC ****************/
+    @PostMapping("/ordenes-compra/{codigoOrdenCompra}/adjuntos")
+    public ResponseEntity<AdjuntoDTO> subirAdjunto(
+            @PathVariable String codigoOrdenCompra,
+            @RequestPart("req") OrdenCompraRequest req,
+            @RequestParam("file") MultipartFile file) {
+
+        if (file.isEmpty()) {
+            throw new ValdiviaOCException("Por favor, selecciona un archivo válido.");
         }
 
-        /****************** Archivos Adjuntos a OC ****************/
-        /****************** Archivos Adjuntos a OC ****************/
-        @PostMapping("/ordenes-compra/{codigoOrdenCompra}/adjuntos")
-        public ResponseEntity<AdjuntoDTO> subirAdjunto(
-                @PathVariable String codigoOrdenCompra,
-                @RequestPart("req") OrdenCompraRequest req,
-                @RequestParam("file") MultipartFile file) {
+        try {
+            AdjuntoDTO adjDTO = ordenCompraService.guardarAdjunto(codigoOrdenCompra, req.getUsuarioExec(), file);
 
-            if (file.isEmpty()) {
-                throw new ValdiviaOCException("Por favor, selecciona un archivo válido.");
-            }
+            return ResponseEntity.ok(adjDTO);
+        } catch (Exception e) {
+            throw new ValdiviaOCException("Error al subir el archivo: " + e.getMessage());
+        }
+    }
 
-            try {
-                AdjuntoDTO adjDTO = ordenCompraService.guardarAdjunto(codigoOrdenCompra, req.getPlantillaDTO(), file);
+    @GetMapping("/ordenes-compra/{codigoOrdenCompra}/archivos")
+    public ResponseEntity<List<AdjuntoDTO>> obtenerRutasAdjuntos(@PathVariable String codigoOrdenCompra) {
+        List<AdjuntoDTO> adjuntos = ordenCompraService.obtenerAdjuntosPorCodigoOrdenCompra(codigoOrdenCompra);
 
-                return ResponseEntity.ok(adjDTO);
-            } catch (Exception e) {
-                throw new ValdiviaOCException("Error al subir el archivo: " + e.getMessage());
-            }
+        if (adjuntos.isEmpty()) {
+            return ResponseEntity.noContent().build(); // 204 No Content si no hay archivos
         }
 
-        @GetMapping("/ordenes-compra/{codigoOrdenCompra}/archivos")
-        public ResponseEntity<List<AdjuntoDTO>> obtenerRutasAdjuntos(@PathVariable String codigoOrdenCompra) {
-            List<AdjuntoDTO> adjuntos = ordenCompraService.obtenerAdjuntosPorCodigoOrdenCompra(codigoOrdenCompra);
-
-            if (adjuntos.isEmpty()) {
-                return ResponseEntity.noContent().build(); // 204 No Content si no hay archivos
-            }
-
-            return ResponseEntity.ok(adjuntos); // 200 OK con la lista
-        }
+        return ResponseEntity.ok(adjuntos); // 200 OK con la lista
+    }
 
     @GetMapping("/ordenes-compra/download/**")
     public ResponseEntity<?> downloadUniversal(HttpServletRequest request) {
@@ -291,4 +291,27 @@ public class OrdenCompraController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al procesar el archivo");
         }
     }
+
+    @DeleteMapping("/ordenes-compra/adjuntos/{idAdjunto}")
+    public ResponseEntity<Void> eliminarAdjuntoIndividual(@PathVariable Integer idAdjunto) {
+        System.out.println("[BACKEND] Solicitud entrante para eliminar archivo adjunto con ID: " + idAdjunto);
+
+        try {
+            // 1. Ejecutar la persistencia en la base de datos
+            boolean eliminado = ordenCompraService.eliminarAdjuntoPorId(idAdjunto);
+
+            if (eliminado) {
+                System.out.println("[BACKEND - ÉXITO] Archivo ID " + idAdjunto + " procesado correctamente.");
+                return ResponseEntity.noContent().build(); // Retorna 204 No Content (Éxito estándar para DELETE)
+            } else {
+                System.out.println("[BACKEND - ADVERTENCIA] No se encontró el registro activo para el ID: " + idAdjunto);
+                return ResponseEntity.notFound().build(); // Retorna 404 si el ID no existía
+            }
+
+        } catch (Exception e) {
+            System.err.println("[BACKEND - ERROR] Falló la eliminación física/lógica del adjunto: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build(); // Retorna 500
+        }
+    }
 }
+

@@ -34,7 +34,7 @@ public interface OrdenCompraRepository extends JpaRepository<OrdenCompra, Intege
     Page<OrdenCompra> buscarAvanzado(
             @Param("idStatus") Integer idStatus,
             @Param("rut") String rut,
-         //   @Param("nombreProv") String nombreProv,
+            //   @Param("nombreProv") String nombreProv,
             @Param("unidadId") Integer unidadId,
             @Param("codOrdenCompra") String codOrdenCompra,
             @Param("fechaInicio") LocalDate fechaInicio,
@@ -43,58 +43,4 @@ public interface OrdenCompraRepository extends JpaRepository<OrdenCompra, Intege
     );
 
 
-    /**
-     * Trae todas las OC cuyo status MÁS RECIENTE tenga el idStatus indicado.
-     * Usa EXISTS con subconsulta que filtra por fechaCambio máxima.
-     ***/
-    @Query(
-            value = """
-        SELECT oc FROM OrdenCompra oc
-        LEFT JOIN FETCH oc.proveedor p
-        LEFT JOIN FETCH oc.idUsuario u
-        LEFT JOIN FETCH oc.idUnidad un
-        LEFT JOIN FETCH oc.documentoTributario d
-        WHERE (
-            SELECT s.estadoOc.idEstadoOc 
-            FROM StatusOrdenCompra s 
-            WHERE s.ordenCompra = oc 
-            ORDER BY s.idStatusOrdenCompra DESC 
-            LIMIT 1
-        ) = :idStatus
-        ORDER BY oc.idOrdenCompra DESC
-    """,
-            countQuery = """
-        SELECT COUNT(oc) FROM OrdenCompra oc
-        WHERE (
-            SELECT s.estadoOc.idEstadoOc 
-            FROM StatusOrdenCompra s 
-            WHERE s.ordenCompra = oc 
-            ORDER BY s.idStatusOrdenCompra DESC 
-            LIMIT 1
-        ) = :idStatus
-    """
-    )
-    Page<OrdenCompra> findByStatusActual(@Param("idStatus") Long idStatus, Pageable pageable);
 }
-    /***
-    @Query("""
-    SELECT COUNT(oc) FROM OrdenCompra oc
-    WHERE EXISTS (
-        SELECT 1 FROM StatusOrdenCompra s
-        WHERE s.ordenCompra = oc
-        AND s.estadoOc.idEstadoOc = :idStatus
-        AND s.idStatusOrdenCompra = (
-            SELECT MAX(s2.idStatusOrdenCompra)
-            FROM StatusOrdenCompra s2
-            WHERE s2.ordenCompra = oc
-        )
-    )
-    """)
-    Long contar(@Param("idStatus") Long idStatus);
-
-
-
-
-
-
-}***/

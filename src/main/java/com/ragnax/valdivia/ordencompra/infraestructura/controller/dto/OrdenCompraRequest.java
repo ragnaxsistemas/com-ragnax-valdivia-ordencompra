@@ -12,7 +12,9 @@ import lombok.NoArgsConstructor;
 public class OrdenCompraRequest {
 
     private String codOc;
+    private String usuarioExec;
+    private String unidadExec;
     private PlantillaDTO plantillaDTO;
-    private String usuarioSup;
+
 
 }
