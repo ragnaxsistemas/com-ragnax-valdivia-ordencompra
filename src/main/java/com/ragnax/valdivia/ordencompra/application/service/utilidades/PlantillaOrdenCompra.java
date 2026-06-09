@@ -132,7 +132,7 @@ public class PlantillaOrdenCompra {
 
         // 3. Rellenar con filas vacías si no alcanzamos el mínimo de 5
         // Nota: Usamos "&nbsp;" (non-breaking space) para asegurar que el motor del PDF dibuje los bordes de la celda vacía
-        while (totalFilasPintadas < 5) {
+        while (totalFilasPintadas < 10) {
             totalFilasPintadas++;
             filasHtml.append("<tr>")
                     .append("  <td style=\"text-align: center; color: #999;\">").append(totalFilasPintadas).append("</td>")

@@ -1,5 +1,6 @@
 package com.ragnax.valdivia.ordencompra.application.service;
 
+import com.ragnax.valdivia.ordencompra.application.service.component.MailComponent;
 import com.ragnax.valdivia.ordencompra.application.service.component.PdfComponent;
 import com.ragnax.valdivia.ordencompra.application.service.model.DocumentoOrdenCompra;
 import com.ragnax.valdivia.ordencompra.application.service.model.OrdenCompraHtml;
@@ -48,6 +49,7 @@ public class OrdenCompraService {
 
     private final ApiProperties apiProperties;
     private final PdfComponent pdfComponent;
+    private final MailComponent mailComponent;
 
     private final OrdenCompraRepository ocRepo;
     private final EstadoOcRepository estadoOcRepository;
@@ -119,14 +121,6 @@ public class OrdenCompraService {
                 .findByUsername(usernameCreador)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Usuario no encontrado: " + usernameCreador));
-        /***Validacion de la Unidad del usuario**/
-        // ── 2. Resolver unidad (NOT NULL en BD) ──────────────────────────
-       /***Unidad unidad = unidadRepository
-                .findByCodigoUnidad(plantillaDTO.getCodUnidad())
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Unidad no encontrada: " + plantillaDTO.getCodUnidad()));***/
-
-        // ── 3. Resolver FK opcionales (nullable en BD) ───────────────────
 
         // ── 4. Construir entidad SIN código aún ──────────────────────────
         OrdenCompra oc = OrdenCompra.builder()
@@ -204,20 +198,21 @@ public class OrdenCompraService {
             oc.setDocumentoTributario(optDte.isPresent() ? optDte.get() : DocumentoTributario.builder().build());
         }
 
-        if(!plantillaDTO.getCodUnidad().equals("")){
+        if(plantillaDTO.getCodUnidad()!=null && !plantillaDTO.getCodUnidad().equals("")){
             Optional<Unidad> optUnidad = unidadRepository.findByCodigoUnidad
                     (plantillaDTO.getCodUnidad());
 
             oc.setIdUnidad(optUnidad.isPresent() ? optUnidad.get().getIdUnidad() : Unidad.builder().build().getIdUnidad());
         }
 
-        if(!plantillaDTO.getRutProveedor().equals("")){
+        if(plantillaDTO.getRutProveedor()!=null && !plantillaDTO.getRutProveedor().equals("")){
             Optional<Proveedor> optProveedor = proveedorRepository.findByRutProveedor
                     (Utilidades.formatearRut(plantillaDTO.getRutProveedor()));
             oc.setProveedor(optProveedor.isPresent() ? optProveedor.get() : Proveedor.builder().build());
         }
 
-        if(!plantillaDTO.getCodGiroSeleccionado().equals("")){
+        if(plantillaDTO.getCodGiroSeleccionado()!=null &&
+                !plantillaDTO.getCodGiroSeleccionado().equals("")){
             Optional<GiroSii> optGiroSii = giroSiiRepository .findByCodigoGiroSii(plantillaDTO.getCodGiroSeleccionado());
 
             oc.setCodigoGiroProveedor(optGiroSii.isPresent() ? optGiroSii.get().getCodigoGiroSii() : "");
@@ -239,8 +234,11 @@ public class OrdenCompraService {
         plantillaDTO.setEstadoActualOc(estadoOc.getNombreEstadoOc().toUpperCase());
 
         return realizarBusquedaAvanzada(
-                optStatusOrdenCompraActual.get().getEstadoOc().getCodigoEstadoOc(), oc.getProveedor().getRutProveedor(),
-                null, oc.getCodigoOrdenCompra(), null, null, PageRequest.of(0, 1)).getContent().get(0);
+                null,
+                null,
+                null, oc.getCodigoOrdenCompra(), null, null
+                , null, null,
+                PageRequest.of(0, 1)).getContent().get(0);
 
  //       return plantillaDTO;
     }
@@ -356,6 +354,10 @@ public class OrdenCompraService {
 
         plantillaDTO = convertToDTO(oc);
         plantillaDTO.setEstadoActualOc(estadoOc.getNombreEstadoOc());
+
+
+        //Enviar Correo hacia supervisor desde valdivia...
+
         return plantillaDTO;
 
 
@@ -395,7 +397,7 @@ public class OrdenCompraService {
         return plantillaDTO;
     }
     // ─── 5. Anular (estado 4 — bloquea la OC) ───────────────
-    public PlantillaDTO anular(String codOCanular, PlantillaDTO plantillaDTO,  String usuarioSupervisor, String codUnidadSupervisor) {
+    public PlantillaDTO anular(String codOCanular, PlantillaDTO plantillaDTO,  String usuarioSupervisor, String codUnidadSupervisor) throws Exception {
         OrdenCompra oc = ocRepo.findByCodigoOrdenCompra(codOCanular)
                 .orElseThrow(() -> new ValdiviaOCException("OC "+ codOCanular +"no encontrada"));
 
@@ -423,11 +425,18 @@ public class OrdenCompraService {
         String observacionStatus = "Status Anular para la orden "+oc.getCodigoOrdenCompra() +" por el usuario "+ usuarioSupervisor;
         EstadoOc estadoOc = registrarStatus(saved, STATUS_ANULADO, usuarioAnulador.getIdUsuario(), observacionStatus);
         plantillaDTO.setEstadoActualOc(estadoOc.getNombreEstadoOc());
+
+        DocumentoOrdenCompra documentoOrdenCompra =  generarDocumentoOc(plantillaDTO.getCodOrdenCompra(), plantillaDTO);
+
+        String filename = "ANULADA_" + oc.getCodigoOrdenCompra() + ".pdf";
+
+        mailComponent.enviarCorreoResend("Anulación", usuarioAnulador.getEmailPerfil(), documentoOrdenCompra.getDocByte(), filename);
+
         return plantillaDTO;
     }
 
     // ─── 6. Confirmar (estado 5 — bloquea la OC) ────────────
-    public PlantillaDTO confirmar(String codOCautorizar, PlantillaDTO plantillaDTO,  String usernameSupervisor, String codUnidadSupervisor) {
+    public PlantillaDTO confirmar(String codOCautorizar, PlantillaDTO plantillaDTO,  String usernameSupervisor, String codUnidadSupervisor) throws Exception {
         OrdenCompra oc = ocRepo.findByCodigoOrdenCompra(plantillaDTO.getCodOrdenCompra())
                 .orElseThrow(() -> new ValdiviaOCException("OC "+ codOCautorizar +"no encontrada"));
 
@@ -463,6 +472,11 @@ public class OrdenCompraService {
         /***
          * GenerarArchivo PDF para Plantilla
          * **/
+        DocumentoOrdenCompra documentoOrdenCompra =  generarDocumentoOc(plantillaDTO.getCodOrdenCompra(), plantillaDTO);
+
+        String filename = "CONFIRMADA_" + oc.getCodigoOrdenCompra() + ".pdf";
+
+        mailComponent.enviarCorreoResend("Confirmacion", usuarioConfirmar.getEmailPerfil(), documentoOrdenCompra.getDocByte(), filename);
 
         return plantillaDTO;
     }
@@ -523,7 +537,9 @@ public class OrdenCompraService {
             //solo hay una OC con ese codigo
             Page< PlantillaStatusDTO > pgPlantillaStatus = realizarBusquedaAvanzada(
                     optStatusOrdenCompraActual.get().getEstadoOc().getCodigoEstadoOc(), oc.getProveedor().getRutProveedor(),
-                    null, oc.getCodigoOrdenCompra(), null, null, PageRequest.of(0, 1));
+                    null, oc.getCodigoOrdenCompra(), null, null
+                    , null, null,
+                    PageRequest.of(0, 1));
             Usuarios usuarioCreador  = null;
             Usuarios usuarioSolicitante  = null;
             Usuarios usuarioAutorizador  = null;
@@ -634,43 +650,61 @@ public class OrdenCompraService {
         }
     }
 
-    public Page < PlantillaStatusDTO > realizarBusquedaAvanzada(
+    public Page<PlantillaStatusDTO> realizarBusquedaAvanzada(
             String codEstadoOc, String rut,
-            String codUnidad, String codOrdenCompra, String fechaInicioStr, String fechaFinStr, Pageable pageable) {
+            String codUnidad, String codOrdenCompra, String fechaInicioStr, String fechaFinStr,
+            String rangoInicio, String rangoFin, // Parámetros recibidos en el controlador
+            Pageable pageable) {
 
         String rutParaQuery = rut;
         Integer unidadParaQuery = null;
         Integer idStatus = null;
-        LocalDate inicio = (fechaInicioStr != null) ? LocalDate.parse(fechaInicioStr) : null;
-        LocalDate fin = (fechaFinStr != null) ? LocalDate.parse(fechaFinStr) : null;
+        LocalDate fecInicio = (fechaInicioStr != null && !fechaInicioStr.isEmpty()) ? LocalDate.parse(fechaInicioStr) : null;
+        LocalDate fecFin = (fechaFinStr != null && !fechaFinStr.isEmpty()) ? LocalDate.parse(fechaFinStr) : null;
+
+        // 🌟 DECLARACIÓN DE VARIABLES PARA EL QUERY (Inicializadas en null)
+        Long ocInicio = null;
+        Long ocFin = null;
+
+        // 🌟 VALIDACIÓN Y ASIGNACIÓN EN PAREJA OBLIGATORIA
+        if (rangoInicio != null && !rangoInicio.isEmpty() && rangoFin != null && !rangoFin.isEmpty()) {
+            try {
+                ocInicio = Long.parseLong(rangoInicio.trim());
+                ocFin = Long.parseLong(rangoFin.trim());
+                System.out.println("🔍 [Filtro Rango] Aplicando rango de IDs desde: " + ocInicio + " hasta: " + ocFin);
+            } catch (NumberFormatException e) {
+                // Manejo preventivo si envían caracteres no numéricos en los inputs de rango
+                System.err.println("❌ [Filtro Rango] Los valores de rango introducidos no son numéricos válidos: "
+                        + rangoInicio + " - " + rangoFin);
+                ocInicio = null;
+                ocFin = null;
+            }
+        } else {
+            System.out.println("ℹ️ [Filtro Rango] Rango incompleto u omitido. Se ignorará en la base de datos.");
+        }
+
         if (codEstadoOc != null && !codEstadoOc.isEmpty()) {
-            // Si el RUT viene solo con números, lo "ensuciamos" para que se parezca a la BD
-            // Ejemplo: 762345678 -> %76%234%567%8%
             idStatus = estadoOcRepository.findByCodigoEstadoOc(codEstadoOc)
                     .orElseThrow(() -> new IllegalStateException("Status no encontrado: " + codEstadoOc)).getIdEstadoOc();
-            // Esto crea un patrón que ignora los puntos y guiones intermedios
         }
 
         if (rut != null && !rut.isEmpty()) {
-            // Si el RUT viene solo con números, lo "ensuciamos" para que se parezca a la BD
-            // Ejemplo: 762345678 -> %76%234%567%8%
             rutParaQuery = rut.trim().replaceAll("", "%");
-            // Esto crea un patrón que ignora los puntos y guiones intermedios
         }
-        if (codUnidad != null && !codUnidad.isEmpty()) {
-            Optional < Unidad > optUnidad = unidadRepository
-                    .findByCodigoUnidad(codUnidad);
 
+        if (codUnidad != null && !codUnidad.isEmpty()) {
+            Optional<Unidad> optUnidad = unidadRepository.findByCodigoUnidad(codUnidad);
             if (optUnidad.isPresent()) {
                 unidadParaQuery = optUnidad.get().getIdUnidad();
             }
         }
-        // Estatus, rut Proveedor, Unidad, CodigoOrdenCompra, FechaCreacion, Pageable
-        // 1. Ejecutar la búsqueda en el repositorio
-        Page < OrdenCompra > ordenes = ocRepo.buscarAvanzado(
-                idStatus, rutParaQuery, unidadParaQuery, codOrdenCompra, inicio, fin, pageable
-        );
 
+        // 🌟 1. Ejecutar la búsqueda en el repositorio pasando ocInicio y ocFin
+        Page<OrdenCompra> ordenes = ocRepo.buscarAvanzado(
+                idStatus, rutParaQuery, unidadParaQuery, codOrdenCompra, fecInicio, fecFin,
+                ocInicio, ocFin, // Se acoplan perfectamente con :idMin e :idMax de tu @Query
+                pageable
+        );
         /***buscarYFiltrar(ordenes, idStatus, rutParaQuery, nombreProv,
          unidadId, codigo, fecha);***/
         // 2. Transformar la página de Entidades a página de DTOs

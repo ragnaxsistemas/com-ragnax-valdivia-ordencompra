@@ -1,6 +1,7 @@
 package com.ragnax.valdivia.ordencompra.application.service.utilidades;
 
 import java.time.LocalDate;
+import java.util.Locale;
 import java.util.zip.CRC32;
 
 public class Utilidades {
@@ -34,18 +35,17 @@ public class Utilidades {
         return cuerpoFormateado + "-" + dv;
     }
 
+
     public static String generarCodigo(Integer idOrdenCompra) {
-        String año = String.valueOf(LocalDate.now().getYear());
+        if (idOrdenCompra == null) {
+            throw new IllegalArgumentException("El ID de la orden de compra no puede ser nulo");
+        }
 
-        // ID con ceros a la izquierda (4 dígitos)
-        String idFormateado = String.format("%04d", idOrdenCompra);
+        // Formatea el ID con ceros a la izquierda hasta completar 6 dígitos
+        String folioFormateado = String.format(Locale.US, "%06d", idOrdenCompra);
 
-        // Hash corto: CRC32 del ID → 4 chars hex en mayúsculas
-        CRC32 crc = new CRC32();
-        crc.update(idOrdenCompra.toString().getBytes());
-        String hash = String.format("%04X", crc.getValue() & 0xFFFF);
-
-        return "OC-" + año + "-" + idFormateado + "-" + hash;
+        // Retorna el formato final: OC XXXXXX
+        return "OC-" + folioFormateado;
     }
 
     public static String generarCodigoProducto(Integer idProducto) {

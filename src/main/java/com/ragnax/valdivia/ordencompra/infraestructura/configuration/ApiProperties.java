@@ -39,4 +39,6 @@ public class ApiProperties {
     @Value("${archivo.html.logoTimbreGerencia}")
     private String archivoHtmlLogoTimbreGerencia;
 
+    @Value("${spring.mail.username}")
+    private String mailUsername;
 }

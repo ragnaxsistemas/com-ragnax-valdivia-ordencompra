@@ -28,10 +28,6 @@ import java.util.List;
 @Slf4j
 public class PdfComponent {
 
-
-
-
-    /***Este es para Masiva*/
     public byte[] generarPdffromHtml(String html) throws Exception {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
@@ -43,22 +39,4 @@ public class PdfComponent {
         return out.toByteArray();
     }
 
-
-    public String guardarPdfIndividual(byte[] pdfBytes,
-                                     String rutaCarpeta,
-                                     String nombreArchivo) throws Exception {
-
-        Path carpeta = Paths.get(rutaCarpeta);
-
-        if (!Files.exists(carpeta)) {
-            Files.createDirectories(carpeta);
-        }
-
-        Path archivo = carpeta.resolve(nombreArchivo);
-
-        try (OutputStream os = Files.newOutputStream(archivo)) {
-            os.write(pdfBytes);
-        }
-        return String.valueOf(archivo.getParent()).concat("/").concat(String.valueOf(archivo.getFileName()));
-    }
 }

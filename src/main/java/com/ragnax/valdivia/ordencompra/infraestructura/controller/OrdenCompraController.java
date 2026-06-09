@@ -159,7 +159,7 @@ public class OrdenCompraController {
     /** PATCH /api/ordenes-compra/{id}/anular */
     @PostMapping("/ordenes-compra/anular")
     public ResponseEntity<PlantillaDTO> anular(
-            @RequestBody OrdenCompraRequest req) {
+            @RequestBody OrdenCompraRequest req) throws Exception {
         return ResponseEntity.ok(
                 ordenCompraService.anular(req.getCodOc(), req.getPlantillaDTO(), req.getUsuarioExec(), req.getUnidadExec()));
         //return   ResponseEntity.ok(null);
@@ -168,7 +168,7 @@ public class OrdenCompraController {
     /** PATCH /api/ordenes-compra/{id}/confirmar */
     @PostMapping("/ordenes-compra/confirmar")
     public ResponseEntity<PlantillaDTO> confirmar(
-            @RequestBody OrdenCompraRequest req) {
+            @RequestBody OrdenCompraRequest req) throws Exception {
         return ResponseEntity.ok(
                 ordenCompraService.confirmar(req.getCodOc(), req.getPlantillaDTO(), req.getUsuarioExec(), req.getUnidadExec()));
     }
@@ -209,10 +209,13 @@ public class OrdenCompraController {
             @RequestParam(required = false) String codOrdenCompra,
             @RequestParam(required = false) String fechaInicioStr,
             @RequestParam(required = false) String fechaFinStr,
+            @RequestParam(required = false) String desde,
+            @RequestParam(required = false) String hasta,
             @PageableDefault(size = 10, sort = "idOrdenCompra") Pageable pageable
     ) {
         Page<PlantillaStatusDTO> resultados = ordenCompraService.realizarBusquedaAvanzada(
-                codEstadoOc, rut, unidad, codOrdenCompra, fechaInicioStr, fechaFinStr, pageable
+                codEstadoOc, rut, unidad, codOrdenCompra,
+                fechaInicioStr, fechaFinStr, desde, hasta, pageable
         );
         //return   ResponseEntity.ok(null);
         return ResponseEntity.ok(resultados);

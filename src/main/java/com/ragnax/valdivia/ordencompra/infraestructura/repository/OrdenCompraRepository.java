@@ -30,17 +30,19 @@ public interface OrdenCompraRepository extends JpaRepository<OrdenCompra, Intege
             "AND (:unidadId IS NULL OR oc.idUnidad = :unidadId) " +
             "AND (:codOrdenCompra IS NULL OR oc.codigoOrdenCompra LIKE CONCAT('%', :codOrdenCompra, '%')) " +
             "AND (:fechaInicio IS NULL OR CAST(oc.fechaCreacion AS date) >= :fechaInicio) " +
-            "AND (:fechaFin IS NULL OR CAST(oc.fechaCreacion AS date) <= :fechaFin)")
+            "AND (:fechaFin IS NULL OR CAST(oc.fechaCreacion AS date) <= :fechaFin) " +
+            // 🌟 NUEVO FILTRO: Rango de ID de Orden de Compra (Ambos deben ser obligatorios para aplicar)
+            "AND ((:idMin IS NULL OR :idMax IS NULL) OR (oc.idOrdenCompra BETWEEN :idMin AND :idMax))")
     Page<OrdenCompra> buscarAvanzado(
             @Param("idStatus") Integer idStatus,
             @Param("rut") String rut,
-            //   @Param("nombreProv") String nombreProv,
+            // @Param("nombreProv") String nombreProv,
             @Param("unidadId") Integer unidadId,
             @Param("codOrdenCompra") String codOrdenCompra,
             @Param("fechaInicio") LocalDate fechaInicio,
             @Param("fechaFin") LocalDate fechaFin,
+            @Param("idMin") Long idMin, // 🌟 Parámetro Rango Inferior
+            @Param("idMax") Long idMax, // 🌟 Parámetro Rango Superior
             Pageable pageable
     );
-
-
 }

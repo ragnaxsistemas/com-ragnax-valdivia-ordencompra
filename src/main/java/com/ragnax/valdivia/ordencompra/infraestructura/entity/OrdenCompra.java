@@ -32,7 +32,7 @@ public class OrdenCompra {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_id_proveedor",
-            foreignKey = @ForeignKey(name = "fk_oc_proveedor"))
+            foreignKey = @ForeignKey(name = "fk_oc_proveedor"), nullable = true)
     private Proveedor proveedor;
 
     @Column(name = "codigo_giro_proveedor")
@@ -41,10 +41,10 @@ public class OrdenCompra {
     @Column(name = "codigo_orden_compra")
     private String codigoOrdenCompra;
 
-    @Column(name = "nombre_orden_compra")
+    @Column(name = "nombre_orden_compra", length = 450)
     private String nombreOrdenCompra;
 
-    @Column(name = "observaciones")
+    @Column(name = "observaciones", length = 500)
     private String observaciones;
 
     @Lob

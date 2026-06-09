@@ -14,4 +14,5 @@ public interface UsuariosRepository extends JpaRepository<Usuarios, Integer> {
 
 
     Optional<Usuarios> findByUsernameAndIdUnidad(String username, Unidad idUnidad);
+    List<Usuarios> findByIdUnidad(Unidad unidad);
 }
