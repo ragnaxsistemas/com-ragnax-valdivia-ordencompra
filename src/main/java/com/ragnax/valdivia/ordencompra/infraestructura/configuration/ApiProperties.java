@@ -41,4 +41,7 @@ public class ApiProperties {
 
     @Value("${spring.mail.username}")
     private String mailUsername;
+
+    @Value("${archivo.creacion.carpeta}")
+    private String archivoCreacionCarpeta;
 }

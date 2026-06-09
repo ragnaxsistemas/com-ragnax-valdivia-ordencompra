@@ -4,6 +4,7 @@ import com.ragnax.valdivia.ordencompra.application.service.component.MailCompone
 import com.ragnax.valdivia.ordencompra.application.service.component.PdfComponent;
 import com.ragnax.valdivia.ordencompra.application.service.model.DocumentoOrdenCompra;
 import com.ragnax.valdivia.ordencompra.application.service.model.OrdenCompraHtml;
+import com.ragnax.valdivia.ordencompra.application.service.model.ReporteGastoUnidadDto;
 import com.ragnax.valdivia.ordencompra.application.service.utilidades.PlantillaCargar;
 import com.ragnax.valdivia.ordencompra.application.service.utilidades.PlantillaOrdenCompra;
 import com.ragnax.valdivia.ordencompra.application.service.utilidades.Utilidades;
@@ -606,7 +607,7 @@ public class OrdenCompraService {
         return null;
     }
 
-    public void validarTransicionEstado(Integer estadoActual, Integer estadoNuevo) {
+    private void validarTransicionEstado(Integer estadoActual, Integer estadoNuevo) {
         boolean esValido = false;
 
         // Si el estado actual es nulo (orden nueva), permitimos entrar en Borrador (1)
@@ -735,16 +736,6 @@ public class OrdenCompraService {
                 //dto.setUnidad(optUnidad.get().getNombreUnidad());
             }
         }
-
-        // --- Datos del Usuario (JOIN FETCH oc.usuario) ---
-        /***if (oc.getIdUsuarioCreador() != null) {
-            Optional < Usuarios > optUsuarios = usuariosRepository.findById(oc.getIdUsuarioCreador());
-            if (optUsuarios.isPresent()) {
-                dto.setU(optUsuarios.get().getUsername()); // Para compatibilidad con PlantillaDTO
-            }
-        }***/
-
-
         // --- Datos del Proveedor (JOIN FETCH oc.proveedor) ---
         if (oc.getProveedor() != null) {
             dto.setRutProveedor(oc.getProveedor().getRutProveedor());
@@ -888,6 +879,18 @@ public class OrdenCompraService {
     /******************************************************************************************************/
     /******************************************************************************************************/
     /******************************************************************************************************/
+    public List<ReporteGastoUnidadDto> obtenerGastosPorPeriodo(Integer mesesAtras) {
+        // Validación preventiva: Si envían valores negativos, lo forzamos a null
+        // para que la query nativa de MySQL traiga el histórico completo.
+        if (mesesAtras != null && mesesAtras < 0) {
+            mesesAtras = null;
+        }
+
+        // Ejecución de la consulta JPA mapeada al DTO Proyección
+        return ocRepo.obtenerReporteGastosPorUnidad(mesesAtras);
+    }
+
+
     public AdjuntoDTO guardarAdjunto(String codigoOrdenCompra, String username, MultipartFile file) throws IOException {
 
         OrdenCompra oc = null;

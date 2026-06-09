@@ -1,5 +1,6 @@
 package com.ragnax.valdivia.ordencompra.infraestructura.repository;
 
+import com.ragnax.valdivia.ordencompra.application.service.model.ReporteGastoUnidadDto;
 import com.ragnax.valdivia.ordencompra.infraestructura.entity.OrdenCompra;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -45,4 +46,18 @@ public interface OrdenCompraRepository extends JpaRepository<OrdenCompra, Intege
             @Param("idMax") Long idMax, // 🌟 Parámetro Rango Superior
             Pageable pageable
     );
+
+    @Query(value = "SELECT " +
+            "    oc.id_unidad AS codigoUnidad, " +
+            "    dt.nombre_documento_tributario AS tipoDocumento, " +
+            "    COUNT(oc.id_orden_compra) AS totalOrdenesEmitidas, " +
+            "    SUM(oc.total_neto) AS inversionTotalNeta, " +
+            "    SUM(oc.total) AS inversionTotalConImpuesto " +
+            "FROM orden_compra oc " +
+            "INNER JOIN documento_tributario dt ON oc.fk_id_documento_tributario = dt.id_documento_tributario " +
+            "WHERE (:mesesAtras IS NULL OR TIMESTAMPDIFF(MONTH, oc.fecha_creacion, NOW()) = :mesesAtras) " +
+            "GROUP BY oc.id_unidad, dt.nombre_documento_tributario " +
+            "ORDER BY inversionTotalConImpuesto DESC",
+            nativeQuery = true)
+    List<ReporteGastoUnidadDto> obtenerReporteGastosPorUnidad(@Param("mesesAtras") Integer mesesAtras);
 }

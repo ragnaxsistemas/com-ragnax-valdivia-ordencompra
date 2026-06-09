@@ -2,10 +2,14 @@ package com.ragnax.valdivia.ordencompra.infraestructura.controller;
 
 import com.ragnax.valdivia.ordencompra.application.service.*;
 import com.ragnax.valdivia.ordencompra.application.service.model.DocumentoOrdenCompra;
+import com.ragnax.valdivia.ordencompra.application.service.model.ReporteGastoUnidadDto;
 import com.ragnax.valdivia.ordencompra.infraestructura.controller.dto.*;
 import com.ragnax.valdivia.ordencompra.infraestructura.exception.ValdiviaOCException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +26,7 @@ import org.springframework.web.servlet.HandlerMapping;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
@@ -30,6 +35,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/oc")
+@Slf4j
 public class OrdenCompraController {
 
     private final OrdenCompraService ordenCompraService;
@@ -199,8 +205,6 @@ public class OrdenCompraController {
 
     }
 
-
-
     @GetMapping("/ordenes-compra/busqueda-avanzada")
     public ResponseEntity<Page<PlantillaStatusDTO>> buscar(
             @RequestParam(required = false) String codEstadoOc,
@@ -314,6 +318,61 @@ public class OrdenCompraController {
         } catch (Exception e) {
             System.err.println("[BACKEND - ERROR] Falló la eliminación física/lógica del adjunto: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build(); // Retorna 500
+        }
+    }
+
+    @GetMapping("/ordenes-compra/reportes/gastos-unidad")
+    public ResponseEntity<List<ReporteGastoUnidadDto>> getGastosPorUnidad(
+            @RequestParam(value = "mesesAtras", required = false) Integer mesesAtras) {
+
+        List<ReporteGastoUnidadDto> reporte = ordenCompraService.obtenerGastosPorPeriodo(mesesAtras);
+
+        if (reporte.isEmpty()) {
+            return ResponseEntity.noContent().build(); // Retorna 204 si no hay registros en ese mes
+        }
+
+        return ResponseEntity.ok(reporte); // Retorna 200 con el JSON estructurado
+    }
+
+    @GetMapping("/download/manual")
+    public ResponseEntity<?> downloadManualUsuario(HttpServletRequest request) throws IOException {
+        log.info("********** downloadManualUsuario **********");
+
+        String rootPathStr = "";//apiProperties.getArchivoCreacionCarpeta(); // /var/www/sb_ope_001a/public_sftp/ o la de tu Mac
+        Path filePath = Paths.get(rootPathStr, "documentacion", "manual_usuario.pdf");
+
+        log.info("Buscando manual en: {}", filePath.toString());
+
+        if (!Files.exists(filePath) || !Files.isReadable(filePath) || Files.isDirectory(filePath)) {
+            log.error("El archivo manual_usuario.pdf no existe o no se puede leer.");
+            return ResponseEntity.notFound().build();
+        }
+
+        String contentType = Files.probeContentType(filePath);
+        if (contentType == null) contentType = "application/pdf";
+
+        String headerValue = "attachment; filename=\"manual_usuario.pdf\"";
+
+        // 🚩 DETECCIÓN INFALIBLE POR RUTA FÍSICA
+        if (rootPathStr.startsWith("/var/www")) {
+            // 🔥 PRODUCCIÓN (AWS con Nginx)
+            String relativePath = filePath.toString().replace(rootPathStr, "");
+            String nginxInternalUrl = "/imsbcartas/internal-files/" + relativePath.replace("\\", "/").replaceAll("^/+", "");
+
+            log.info("[PROD-MANUAL] Forzando engranaje Nginx X-Accel: {}", nginxInternalUrl);
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, headerValue)
+                    .header("X-Accel-Redirect", nginxInternalUrl)
+                    .build();
+        } else {
+            // 💻 DESARROLLO (MacBook Local)
+            log.info("[LOCAL-MANUAL] Transmitiendo bytes directamente desde Spring Boot");
+            Resource resource = new UrlResource(filePath.toUri());
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, headerValue)
+                    .body(resource);
         }
     }
 }
