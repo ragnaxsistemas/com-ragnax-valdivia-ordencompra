@@ -71,7 +71,7 @@ public class JwtUtil {
                 .expiration(new Date(expiresAt))
                 .signWith(KEY)
                 .compact();
-
+        System.out.println(login.getUsername()+" - "+token);
         return new TokenResponse(token, expiresAt);
     }
 }

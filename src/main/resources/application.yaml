@@ -93,8 +93,6 @@ swagger:
       url: www.ragnaxsistemas.cl
 
 archivo:
-  carpeta:
-    public: /Users/mac/Workspaces/WorkspaceSanBernardo/com-ragnax-sanbernardo-notificacion/src/main/resources/public_file/
   html:
     nombreCarpetaTemplate: templates/
     nombreHtmlConfirmada: oc_confirmada.html

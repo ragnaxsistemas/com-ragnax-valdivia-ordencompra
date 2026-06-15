@@ -40,6 +40,8 @@ public class OrdenCompraController {
 
     private final OrdenCompraService ordenCompraService;
 
+    private final PendienteAnulacionOrdenCompraService pendienteAnulacionOrdenCompraService;
+
     private final ProveedorService proveedorService;
 
     private final EstadoOcService estadoOcService;
@@ -274,27 +276,18 @@ public class OrdenCompraController {
             // 4. Preparar cabeceras comunes de respuesta
             String headerValue = String.format("inline; filename=\"%s\"", infoDescarga.getNombreArchivo());
 
-            ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok()
-                    .contentType(MediaType.parseMediaType(infoDescarga.getContentType()))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, headerValue);
 
-            // 5. Responder según la estrategia determinada por el servicio
-            if (infoDescarga.esParaNginx()) {
-                System.out.println("[PROD - VALDIVIA] Redireccionando a Nginx X-Accel: {}" + infoDescarga.getNginxInternalUrl());
-                return responseBuilder
-                        .header("X-Accel-Redirect", infoDescarga.getNginxInternalUrl())
-                        .build(); // Retorna vacío (Nginx inyectará los bytes)
-            } else {
-                System.out.println("[LOCAL - VALDIVIA] Transmitiendo bytes directamente desde Spring Boot");
-                return responseBuilder
-                        .body(infoDescarga.getRecurso()); // Retorna el recurso con los bytes reales
-            }
+            // 4. Retornar los bytes directamente en el body de la respuesta
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(infoDescarga.getContentType()))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, headerValue)
+                    .body(infoDescarga.getRecurso()); // Spring Boot se encarga de transmitir el recurso
 
         } catch (FileNotFoundException e) {
-            System.out.println("Archivo no encontrado: {}" +  e.getMessage());
+            System.err.println("Archivo no encontrado: " + e.getMessage());
             return ResponseEntity.notFound().build();
         } catch (IOException e) {
-            System.out.println("Error al procesar la descarga del archivo" + e);
+            System.err.println("Error al procesar la descarga del archivo: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al procesar el archivo");
         }
     }
@@ -321,6 +314,26 @@ public class OrdenCompraController {
         }
     }
 
+    @PostMapping("/ordenes-compra/pendiente-anulacion")
+    public ResponseEntity<PendienteAnulacionDTO> pendienteAnulacionOrdenCompra(
+            @RequestBody PendienteAnulacionOrdenCompraRequest pendienteAnulacionOrdenCompraRequest) {
+
+        PendienteAnulacionDTO pendienteAnulacionDTO = pendienteAnulacionOrdenCompraService.guardarPendienteAnulacionOrdenCompra(pendienteAnulacionOrdenCompraRequest);
+
+        return ResponseEntity.status(HttpStatus.OK).body(pendienteAnulacionDTO);
+
+    }
+
+    @GetMapping("/ordenes-compra/pendiente-anulacion")
+    public ResponseEntity<PendienteAnulacionDTO> getPendienteAnulacionOrdenCompra(
+            @RequestParam(required = false) String codOrdenCompra) {
+
+        PendienteAnulacionDTO pendienteAnulacionDTO = pendienteAnulacionOrdenCompraService.obtenerPendienteAnulacionOrdenCompra(codOrdenCompra);
+
+        return ResponseEntity.status(HttpStatus.OK).body(pendienteAnulacionDTO);
+
+    }
+
     @GetMapping("/ordenes-compra/reportes/gastos-unidad")
     public ResponseEntity<List<ReporteGastoUnidadDto>> getGastosPorUnidad(
             @RequestParam(value = "mesesAtras", required = false) Integer mesesAtras) {
@@ -332,48 +345,6 @@ public class OrdenCompraController {
         }
 
         return ResponseEntity.ok(reporte); // Retorna 200 con el JSON estructurado
-    }
-
-    @GetMapping("/download/manual")
-    public ResponseEntity<?> downloadManualUsuario(HttpServletRequest request) throws IOException {
-        log.info("********** downloadManualUsuario **********");
-
-        String rootPathStr = "";//apiProperties.getArchivoCreacionCarpeta(); // /var/www/sb_ope_001a/public_sftp/ o la de tu Mac
-        Path filePath = Paths.get(rootPathStr, "documentacion", "manual_usuario.pdf");
-
-        log.info("Buscando manual en: {}", filePath.toString());
-
-        if (!Files.exists(filePath) || !Files.isReadable(filePath) || Files.isDirectory(filePath)) {
-            log.error("El archivo manual_usuario.pdf no existe o no se puede leer.");
-            return ResponseEntity.notFound().build();
-        }
-
-        String contentType = Files.probeContentType(filePath);
-        if (contentType == null) contentType = "application/pdf";
-
-        String headerValue = "attachment; filename=\"manual_usuario.pdf\"";
-
-        // 🚩 DETECCIÓN INFALIBLE POR RUTA FÍSICA
-        if (rootPathStr.startsWith("/var/www")) {
-            // 🔥 PRODUCCIÓN (AWS con Nginx)
-            String relativePath = filePath.toString().replace(rootPathStr, "");
-            String nginxInternalUrl = "/imsbcartas/internal-files/" + relativePath.replace("\\", "/").replaceAll("^/+", "");
-
-            log.info("[PROD-MANUAL] Forzando engranaje Nginx X-Accel: {}", nginxInternalUrl);
-            return ResponseEntity.ok()
-                    .contentType(MediaType.parseMediaType(contentType))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, headerValue)
-                    .header("X-Accel-Redirect", nginxInternalUrl)
-                    .build();
-        } else {
-            // 💻 DESARROLLO (MacBook Local)
-            log.info("[LOCAL-MANUAL] Transmitiendo bytes directamente desde Spring Boot");
-            Resource resource = new UrlResource(filePath.toUri());
-            return ResponseEntity.ok()
-                    .contentType(MediaType.parseMediaType(contentType))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, headerValue)
-                    .body(resource);
-        }
     }
 }
 

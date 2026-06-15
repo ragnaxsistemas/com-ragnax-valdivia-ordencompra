@@ -40,5 +40,5 @@ logging:
 
 archivo:
   carpeta:
-    public: /Users/mac/Workspaces/WorkspaceSanBernardo/com-ragnax-sanbernardo-notificacion/src/main/resources/public_file/
+    public: /Users/mac/Workspaces/WorkspaceValdivia/com-ragnax-valdivia-ordencompra/src/main/resources/public_file/
 

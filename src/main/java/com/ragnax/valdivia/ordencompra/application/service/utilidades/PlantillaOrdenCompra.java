@@ -18,7 +18,7 @@ public class PlantillaOrdenCompra {
                                                             PlantillaStatusImpresionDTO plantillaStatusImpresionDTO) throws JsonProcessingException {
 
         //Escudo
-        String imgTag1 = "<img src='data:image/png;base64," + ordenCompraHtml.getListImagesBase64().get(0) + "' style='width: 90px; height: auto;'/>";
+        String imgTag1 = "<img src='data:image/png;base64," + ordenCompraHtml.getListImagesBase64().get(0) + "' style='width: 120px; height: auto;'/>";
 
         String imgTag2 = "<img src='data:image/png;base64," + ordenCompraHtml.getListImagesBase64().get(1) + "' style='width: 60px; height: auto;'/>";
 
@@ -124,15 +124,15 @@ public class PlantillaOrdenCompra {
                         .append("  <td style=\"text-align: center;\">").append(totalFilasPintadas).append("</td>")
                         .append("  <td>").append(descripcion).append("</td>")
                         .append("  <td style=\"text-align: center;\">").append(cantidad).append("</td>")
-                        .append("  <td style=\"text-align: right;\">").append(strUnitario).append("</td>")
-                        .append("  <td style=\"text-align: right;\">").append(strTotal).append("</td>")
+                        .append("  <td style=\"text-align: center;\">").append(strUnitario).append("</td>")
+                        .append("  <td style=\"text-align: center;\">").append(strTotal).append("</td>")
                         .append("</tr>");
             }
         }
 
         // 3. Rellenar con filas vacías si no alcanzamos el mínimo de 5
         // Nota: Usamos "&nbsp;" (non-breaking space) para asegurar que el motor del PDF dibuje los bordes de la celda vacía
-        while (totalFilasPintadas < 10) {
+        /***while (totalFilasPintadas < 10) {
             totalFilasPintadas++;
             filasHtml.append("<tr>")
                     .append("  <td style=\"text-align: center; color: #999;\">").append(totalFilasPintadas).append("</td>")
@@ -141,7 +141,7 @@ public class PlantillaOrdenCompra {
                     .append("  <td>&nbsp;</td>")
                     .append("  <td>&nbsp;</td>")
                     .append("</tr>");
-        }
+        }***/
 
         return filasHtml.toString();
     }
@@ -149,7 +149,7 @@ public class PlantillaOrdenCompra {
     public static String generarPlantillaAnulado(OrdenCompraHtml ordenCompraHtml,
                                                     PlantillaStatusImpresionDTO plantillaStatusImpresionDTO) throws JsonProcessingException {
         //Escudo
-        String imgTag1 = "<img src='data:image/png;base64," + ordenCompraHtml.getListImagesBase64().get(0) + "' style='width: 90px; height: auto;'/>";
+        String imgTag1 = "<img src='data:image/png;base64," + ordenCompraHtml.getListImagesBase64().get(0) + "' style='width: 120px; height: auto;'/>";
 
         String imgTag2 = "<img src='data:image/png;base64," + ordenCompraHtml.getListImagesBase64().get(1) + "' style='width: 60px; height: auto;'/>";
 

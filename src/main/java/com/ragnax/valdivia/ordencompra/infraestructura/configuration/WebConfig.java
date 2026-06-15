@@ -10,7 +10,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
                 // Corrige la URL aquí (sin el doble protocolo)
-                .allowedOrigins("https://sistemacartas.sanbernardo.cl",
+                .allowedOrigins("https://ordenesdecompra.ccm-valdivia.cl",
                         "http://localhost:4200")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")

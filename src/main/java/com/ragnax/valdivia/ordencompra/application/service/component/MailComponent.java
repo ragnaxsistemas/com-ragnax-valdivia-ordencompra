@@ -61,13 +61,13 @@ public class MailComponent {
             String[] destinatariosBCC = listaSupervisionBCC.stream()
                     .map(Usuarios::getEmailPerfil)
                     .toArray(String[]::new);
-            destinatariosBCC[destinatariosBCC.length-1] =  "julio.ignacio.cornejo.sb@gmail.com";   //apiProperties.getMailUsername();
+           // destinatariosBCC[destinatariosBCC.length-1] =  "julio.ignacio.cornejo.sb@gmail.com";   //apiProperties.getMailUsername();
             // Si aún no has validado tu dominio, usa el de prueba de Resend:
             helper.setFrom("onboarding@resend.dev", "Corporación Cultural Municipal De Valdivia");
             // helper.setCc(new String[] {"julio.i.cornejo.g@gmail.com"} );
             helper.setTo("julio.ignacio.cornejo.sb@gmail.com"); //mailReceptoCCM
-            helper.setCc("julio.ignacio.cornejo.sb@gmail.com"); //destinatariosCC
-            helper.setBcc("julio.ignacio.cornejo.sb@gmail.com"); //destinatariosBCC
+           // helper.setCc("julio.ignacio.cornejo.sb@gmail.com"); //destinatariosCC
+           // helper.setBcc("julio.ignacio.cornejo.sb@gmail.com"); //destinatariosBCC
             helper.setSubject(String.format("%s Orden de Compra - Corporación Cultural Municipal De Valdivia", tipo));
 
             // Construcción del Cuerpo

@@ -10,16 +10,16 @@
             color: #333;
             line-height: 1.2;
             margin: 0;
-            padding: 10px;
+            padding: 5px;
             background-color: #f5f5f5;
-            font-size: 11px;
+            font-size: 12px; /* MODIFICADO: Aumentado un 10% (de 11px a 12px) */
         }
 
         .oc-container {
-            max-width: 850px;
+            max-width: 1000px;
             margin: 0 auto;
             background-color: #fff;
-            padding: 20px 25px;
+            padding: 15px 20px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
             border-top: 6px solid #f2a900;
         }
@@ -47,7 +47,7 @@
         }
 
         .oc-title {
-            font-size: 18px;
+            font-size: 20px; /* MODIFICADO: De 18px a 20px */
             font-weight: bold;
             color: #000;
             margin: 0;
@@ -56,7 +56,7 @@
         .oc-number {
             color: #d32f2f;
             font-weight: bold;
-            font-size: 15px;
+            font-size: 16.5px; /* MODIFICADO: De 15px a 16.5px */
         }
 
         .section-title {
@@ -65,7 +65,7 @@
             font-weight: bold;
             margin-top: 8px;
             border-bottom: 1px solid #ccc;
-            font-size: 11px;
+            font-size: 12px; /* MODIFICADO: De 11px a 12px */
         }
 
         /* --- TABLA ESTRUCTURAL DE PROVEEDOR --- */
@@ -77,7 +77,7 @@
         }
         .provider-table td {
             padding: 3px 6px;
-            font-size: 11px;
+            font-size: 12px; /* MODIFICADO: De 11px a 12px */
             border: none;
             vertical-align: top;
         }
@@ -96,13 +96,13 @@
             background-color: #f8f8f8;
             border: 1px solid #ccc;
             padding: 5px 6px;
-            font-size: 11px;
+            font-size: 12px; /* MODIFICADO: De 11px a 12px */
             text-align: left;
         }
         .products-table td {
             border: 1px solid #ccc;
             padding: 4px 6px;
-            font-size: 11px;
+            font-size: 12px; /* MODIFICADO: De 11px a 12px */
         }
 
         /* --- TABLA DE TOTALES --- */
@@ -118,7 +118,7 @@
         .totals-table td {
             border: 1px solid #ccc;
             padding: 5px;
-            font-size: 11px;
+            font-size: 12px; /* MODIFICADO: De 11px a 12px */
             font-weight: bold;
         }
 
@@ -132,7 +132,7 @@
             padding: 6px;
             border: 1px solid #ccc;
             font-family: Arial, sans-serif;
-            font-size: 11px;
+            font-size: 12px; /* MODIFICADO: De 11px a 12px */
             resize: none;
             box-sizing: border-box;
             display: block;
@@ -147,18 +147,18 @@
         }
 
         .firma-block-cell {
-            width: 35%; /* Ancho óptimo para dar soporte a la línea de firma */
+            width: 35%;
             padding: 0;
             vertical-align: bottom;
             text-align: center;
         }
 
         .firma-spacer-cell {
-            width: 30%; /* Espaciador central que empuja las firmas a los extremos */
+            width: 30%;
         }
 
         .firma-espacio-timbre {
-            height: 60px; /* Espacio ideal para que se plasme el timbre sin pisar la línea */
+            height: 60px;
             display: block;
             text-align: center;
             vertical-align: bottom;
@@ -172,7 +172,7 @@
 
         .item-label {
             font-weight: bold;
-            font-size: 10px;
+            font-size: 11px; /* MODIFICADO: De 10px a 11px */
             color: #000;
             text-transform: uppercase;
             line-height: 1.3;
@@ -184,7 +184,7 @@
             padding-top: 6px;
             border-top: 1px solid #eee;
             text-align: center;
-            font-size: 10px;
+            font-size: 11px; /* MODIFICADO: De 10px a 11px */
             color: #666;
         }
         .footer p {
@@ -207,9 +207,8 @@
                 <div class="oc-info">
                     <h1 class="oc-title">ORDEN DE COMPRA</h1>
                     <div class="oc-number">{{FOLIO_OC}}</div>
-                    <p style="font-size: 11px; margin-top: 5px; line-height: 1.4; margin-bottom: 0;">
-                        <strong>Fecha:</strong> {{FECHA_CREACION_OC}}<br>
-                        <strong>Unidad compradora:</strong> {{UNIDAD_COMPRADORA_OC}}<br>
+                    <p style="font-size: 12px; margin-top: 5px; line-height: 1.4; margin-bottom: 0;"> <strong>Fecha:</strong> {{FECHA_CREACION_OC}}<br>
+                        <strong>Unidad requiriente:</strong> {{UNIDAD_COMPRADORA_OC}}<br>
                         <strong>Autorizado por:</strong> {{AUTORIZADOR_OC}}<br>
                         <strong>Confirmada por:</strong> {{CONFIRMADOR_OC}}
                     </p>
@@ -255,8 +254,7 @@
 
     <table style="width: 100%; border-collapse: collapse; margin-top: 3px; margin-bottom: 8px; table-layout: fixed;">
         <tr>
-            <td style="padding: 6px 8px; font-size: 11px; font-weight: bold; color: #000; background-color: #ffffff; border: 1px solid #ccc; border-top: none; word-break: break-word; word-wrap: break-word; white-space: normal; line-height: 1.4;">
-                {{NOMBRE_OC}}
+            <td style="padding: 6px 8px; font-size: 12px; font-weight: bold; color: #000; background-color: #ffffff; border: 1px solid #ccc; border-top: none; word-break: break-word; word-wrap: break-word; white-space: normal; line-height: 1.4;"> {{NOMBRE_OC}}
             </td>
         </tr>
     </table>
@@ -266,9 +264,9 @@
         <tr>
             <th style="width: 30px;">N°</th>
             <th>Descripción</th>
-            <th style="width: 60px;">Cantidad</th>
-            <th style="width: 100px;">Valor Unitario</th>
-            <th style="width: 100px;">Valor Total</th>
+            <th style="width: 70px;">Cantidad</th>
+            <th style="width: 70px;">Valor Unitario</th>
+            <th style="width: 70px;">Valor Total</th>
         </tr>
         </thead>
         <tbody>
@@ -298,10 +296,8 @@
         <textarea class="observations-textarea" readonly>{{OBSERVACIONES_OC}}</textarea>
     </div>
 
-    <!-- SECCIÓN DE FIRMAS EXCLUSIVA: CONTABILIDAD Y GERENCIA EN LOS EXTREMOS -->
     <table class="firmas-container-table">
         <tr>
-            <!-- CONTABILIDAD Y FINANZAS (IZQUIERDA) -->
             <td class="firma-block-cell">
                 <div class="firma-espacio-timbre">
                     {{TIMBRE_CONTABILIDAD}}
@@ -311,10 +307,8 @@
                 </div>
             </td>
 
-            <!-- ESPACIADOR CENTRAL MUDO -->
             <td class="firma-spacer-cell"></td>
 
-            <!-- GERENCIA (DERECHA) -->
             <td class="firma-block-cell">
                 <div class="firma-espacio-timbre">
                     {{TIMBRE_GERENCIA}}

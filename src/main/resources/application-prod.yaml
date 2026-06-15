@@ -104,7 +104,7 @@ servicio:
     generarCartaNotificacion: generarCartaNotificacion
 archivo:
   carpeta:
-    public: /Users/mac/Workspaces/WorkspaceSanBernardo/com-ragnax-sanbernardo-notificacion/src/main/resources/public_file/
+    public: /var/www/sb_ope_001a/public_file/
   html:
     nombreCarpetaTemplate: templates/
     nombreHtmlConfirmada: oc_confirmada.html
