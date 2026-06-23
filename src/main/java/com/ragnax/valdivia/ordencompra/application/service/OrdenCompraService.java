@@ -419,6 +419,9 @@ public class OrdenCompraService {
         Usuarios usuarioAnulador = usuariosRepository.findByUsernameAndIdUnidad(usuarioSupervisor, unidadSupervisor)
                 .orElseThrow(() -> new ValdiviaOCException("Usuario no encontrado: " + usuarioSupervisor));
 
+        Proveedor optProveedor = proveedorRepository.findById(oc.getProveedor().getIdProveedor())
+                .orElseThrow(() -> new ValdiviaOCException("Usuario no encontrado: " + usuarioSupervisor));
+
         oc.setIdUsuarioAnulador(usuarioAnulador.getIdUsuario());
 
         OrdenCompra saved = ocRepo.save(oc);
@@ -431,7 +434,7 @@ public class OrdenCompraService {
 
         String filename = "ANULADA_" + oc.getCodigoOrdenCompra() + ".pdf";
 
-        mailComponent.enviarCorreoResend("Anulación", usuarioAnulador.getEmailPerfil(), documentoOrdenCompra.getDocByte(), filename);
+        mailComponent.enviarCorreoResend("Anulación", optProveedor.getEmailProveedor(), documentoOrdenCompra.getDocByte(), filename);
 
         return plantillaDTO;
     }
@@ -461,6 +464,9 @@ public class OrdenCompraService {
 
         oc.setIdUsuarioConfirmador(usuarioConfirmar.getIdUsuario());
 
+        Proveedor optProveedor = proveedorRepository.findById(oc.getProveedor().getIdProveedor())
+                .orElseThrow(() -> new ValdiviaOCException("Usuario no encontrado: " + usuarioConfirmar));
+
         //validarUnidadSupervisor(usuarioPlantilla, usuarioSup);
 
         validarNoSeBloqueada(oc);
@@ -473,6 +479,7 @@ public class OrdenCompraService {
         /***
          * GenerarArchivo PDF para Plantilla
          * **/
+        //Crear Entidad OC_CONFIRMADA para el molde del Correo
         DocumentoOrdenCompra documentoOrdenCompra =  generarDocumentoOc(plantillaDTO.getCodOrdenCompra(), plantillaDTO);
 
         String filename = "CONFIRMADA_" + oc.getCodigoOrdenCompra() + ".pdf";
@@ -610,7 +617,7 @@ public class OrdenCompraService {
     private void validarTransicionEstado(Integer estadoActual, Integer estadoNuevo) {
         boolean esValido = false;
 
-        // Si el estado actual es nulo (orden nueva), permitimos entrar en Borrador (1)
+        // Si el estado actual es nulo (orden nueva), debe comenzar en Borrador (1)
         if (estadoActual == null) {
             if (estadoNuevo == 1) return;
             throw new RuntimeException("Una orden nueva debe comenzar en estado Borrador.");
@@ -618,28 +625,28 @@ public class OrdenCompraService {
 
         switch (estadoActual) {
             case 1: // Borrador
-                if (estadoNuevo == 1) esValido = true;
-                if (estadoNuevo == 2) esValido = true;
+                // Puede mantenerse en Borrador (1) o pasar a Pendiente Autorización (2)
+                if (estadoNuevo == 1 || estadoNuevo == 2) esValido = true;
                 break;
 
             case 2: // Pendiente Autorización
-                if (estadoNuevo == 1) esValido = true;
-                if (estadoNuevo == 3) esValido = true;
+                // Puede volver a Borrador (1) o avanzar a Autorizado (3)
+                if (estadoNuevo == 1 || estadoNuevo == 3) esValido = true;
                 break;
 
             case 3: // Autorizado
-                // Puede volver a Borrador(Devolver), ir a Pendiente Anulación, Anulado o Confirmada
-                if (List.of(1, 4, 5, 6).contains(estadoNuevo)) esValido = true;
+                // Puede volver a Borrador (1) o avanzar a Confirmada (5)
+                if (estadoNuevo == 1 || estadoNuevo == 5) esValido = true;
                 break;
 
             case 4: // Anulado
-            case 5: // Confirmada
-                // Estados finales: no permiten más transiciones
+                // Estado final absoluto: no permite más transiciones
                 esValido = false;
                 break;
 
-            case 6: // Pendiente Anulación
-                if (List.of(4, 5).contains(estadoNuevo)) esValido = true;
+            case 5: // Confirmada
+                // Desde Confirmada ahora se puede pasar a Anulado (4)
+                if (estadoNuevo == 4) esValido = true;
                 break;
 
             default:

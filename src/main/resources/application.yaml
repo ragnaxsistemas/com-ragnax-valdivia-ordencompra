@@ -19,11 +19,11 @@ spring:
     multipart:
       max-file-size: 110MB
       max-request-size: 110MB
-  mail:
-    host: smtp.resend.com
+  mail: #https://vps16.xhost.cl:2096
+    host: mail.ccm-valdivia.cl
     port: 465
-    username: resend
-    password: re_UNjdbpTp_GF4LZDirLGtHe9LDy2TojzhR
+    username: ordenesdecompra@ccm-valdivia.cl
+    password: KEFOXPTMZESADSY3
     properties:
       mail:
         smtp:

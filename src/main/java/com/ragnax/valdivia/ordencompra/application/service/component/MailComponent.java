@@ -37,7 +37,7 @@ public class MailComponent {
     @Autowired
     private ApiProperties apiProperties;
 
-    public  void enviarCorreoResend(String tipo, String mailReceptoCCM, byte[] archivoAdjunto, String nombreArchivo) {
+    public  void enviarCorreoResend(String tipo, String mailReceptoProveedor, byte[] archivoAdjunto, String nombreArchivo) {
         MimeMessage message = emailSender.createMimeMessage();
         try {
             MimeMessageHelper helper = new MimeMessageHelper(message, true);
@@ -63,20 +63,24 @@ public class MailComponent {
                     .toArray(String[]::new);
            // destinatariosBCC[destinatariosBCC.length-1] =  "julio.ignacio.cornejo.sb@gmail.com";   //apiProperties.getMailUsername();
             // Si aún no has validado tu dominio, usa el de prueba de Resend:
-            helper.setFrom("onboarding@resend.dev", "Corporación Cultural Municipal De Valdivia");
+            helper.setFrom(apiProperties.getMailUsername(), "Corporación Cultural Municipal De Valdivia");
+            //apiProperties.getMailUsername()
             // helper.setCc(new String[] {"julio.i.cornejo.g@gmail.com"} );
-            helper.setTo("julio.ignacio.cornejo.sb@gmail.com"); //mailReceptoCCM
-           // helper.setCc("julio.ignacio.cornejo.sb@gmail.com"); //destinatariosCC
-           // helper.setBcc("julio.ignacio.cornejo.sb@gmail.com"); //destinatariosBCC
-            helper.setSubject(String.format("%s Orden de Compra - Corporación Cultural Municipal De Valdivia", tipo));
+            helper.setTo(mailReceptoProveedor); //mailReceptoProveedor
+            helper.setCc(destinatariosCC); //destinatariosCC
+            helper.setBcc(apiProperties.getMailUsername());
+            String subject = String.format("%s Orden de Compra Emitida - Corporación Cultural Municipal De Valdivia", tipo);
+            helper.setSubject(subject);
 
             // Construcción del Cuerpo
             String cuerpo = String.format(
-                    "Buen día:" +
-                            "Junto con saludar, por medio de la presente se informa que se ha realizado la %s de Órdenes de Compra correspondientes a la Corporación Cultural de la I. Municipalidad de Valdivia, según consta en el archivo adjunto.\n\n" +
-                            "Agradeciendo de antemano su gestión y quedando atento a sus comentarios, le saluda atentamente,\n\n" +
-                            "Julio Cornejo\n" +
-                            "Cel. 993003452",
+                    "Estimado proveedor:\n\n" +
+                            "Junto con saludar, se adjunta Orden de Compra de la Corporación Cultural de la Ilustre Municipalidad de Valdivia.\n" +
+                            "Favor se solicita comunicarse directamente con la Unidad Requiriente a cargo.\n\n" +
+                            "Saluda atentamente,\n" +
+                            "Corporación Cultural Ilustre Municipalidad de Valdivia\n\n"+
+                            "Esta notificación fue emitida automáticamente por Sistema Órdenes de Compra de la CCM Valdivia"
+                    ,
                     tipo
             );
 
@@ -84,6 +88,8 @@ public class MailComponent {
 
             // Adjuntar el archivo
             helper.addAttachment(nombreArchivo, new ByteArrayResource(archivoAdjunto));// 'true' para HTML (como tus plantillas)
+            log.info("subject {} - cuerpo {} - FROM {} - TO {} - CC {} - BCC {} ***", subject, cuerpo,apiProperties.getMailUsername(),
+                    mailReceptoProveedor, destinatariosCC, apiProperties.getMailUsername());
 
             emailSender.send(message);
             log.info("Correo enviado con éxito vía Resend");

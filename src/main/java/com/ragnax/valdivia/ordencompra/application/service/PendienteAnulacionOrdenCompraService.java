@@ -45,7 +45,10 @@ public class PendienteAnulacionOrdenCompraService {
                             .orElseThrow(() -> new ValdiviaOCException("OC "+codOrdenCompra +"no encontrada"));
         }
 
-        Optional<PendienteAnulacionOrdenCompra> optPendienteAnulacionOrdenCompra= pendienteAnulacionOrdenCompraRepository. findByOrdenCompra(oc);
+        List<PendienteAnulacionOrdenCompra> listPendienteAnulacionOrdenCompra= pendienteAnulacionOrdenCompraRepository. findByOrdenCompra(oc);
+
+        Optional<PendienteAnulacionOrdenCompra> optPendienteAnulacionOrdenCompra = listPendienteAnulacionOrdenCompra.stream()
+                .findFirst();
 
         if(optPendienteAnulacionOrdenCompra.isPresent()){
 
