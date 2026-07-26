@@ -1,11 +1,14 @@
 package com.ragnax.valdivia.ordencompra.infraestructura.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.ragnax.valdivia.ordencompra.application.service.*;
 import com.ragnax.valdivia.ordencompra.application.service.model.DocumentoOrdenCompra;
 import com.ragnax.valdivia.ordencompra.application.service.model.ReporteGastoUnidadDto;
+import com.ragnax.valdivia.ordencompra.application.service.utilidades.Utilidades;
 import com.ragnax.valdivia.ordencompra.infraestructura.controller.dto.*;
 import com.ragnax.valdivia.ordencompra.infraestructura.exception.ValdiviaOCException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -108,7 +111,7 @@ public class OrdenCompraController {
 
     @GetMapping("/proveedor/{rut_limpio}")
     public ResponseEntity<ProveedorDTO> obtenerPorId(@PathVariable String rut_limpio) {
-        return ResponseEntity.ok(proveedorService.obtenerPorRut(rut_limpio));
+        return ResponseEntity.ok(proveedorService.obtenerPorRut(Utilidades.limpiarRut(rut_limpio)));
     }
 
     @PostMapping("/proveedor")
@@ -119,7 +122,15 @@ public class OrdenCompraController {
 
     @PutMapping("/proveedor/{rut_limpio}")
     public ResponseEntity<ProveedorDTO> actualizar(@PathVariable String rut_limpio, @RequestBody ProveedorDTO dto) {
-        return ResponseEntity.ok(proveedorService.actualizar(rut_limpio, dto));
+        return ResponseEntity.ok(proveedorService.actualizar(Utilidades.limpiarRut(rut_limpio), dto));
+    }
+
+    @GetMapping("/ordenes-compra/last")
+    public ResponseEntity<PlantillaDTO> obtenerUltimaOC() {
+
+        PlantillaDTO oc = ordenCompraService.findUltimoOc();
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(oc);
     }
 
     @PostMapping("/ordenes-compra/new")
@@ -140,7 +151,7 @@ public class OrdenCompraController {
 
     @PostMapping("/ordenes-compra/solicitar")
     public ResponseEntity<PlantillaDTO> solicitar(
-            @RequestBody OrdenCompraRequest req) {
+            @RequestBody OrdenCompraRequest req) throws JsonProcessingException {
         return ResponseEntity.ok(
                 ordenCompraService.solicitarAutorizacion(req.getPlantillaDTO(), req.getUsuarioExec(), req.getUnidadExec()));
         //return   ResponseEntity.ok(null);
@@ -149,7 +160,7 @@ public class OrdenCompraController {
     /** PATCH /api/ordenes-compra/{id}/devolver */
     @PostMapping("/ordenes-compra/devolver")
     public ResponseEntity<PlantillaDTO> devolver(
-            @RequestBody OrdenCompraRequest req) {
+            @RequestBody OrdenCompraRequest req) throws JsonProcessingException {
         return ResponseEntity.ok(
                 ordenCompraService.devolver(req.getCodOc(), req.getPlantillaDTO(), req.getUsuarioExec(), req.getUnidadExec()));
         //return   ResponseEntity.ok(null);
@@ -164,15 +175,6 @@ public class OrdenCompraController {
         //return   ResponseEntity.ok(null);
     }
 
-    /** PATCH /api/ordenes-compra/{id}/anular */
-    @PostMapping("/ordenes-compra/anular")
-    public ResponseEntity<PlantillaDTO> anular(
-            @RequestBody OrdenCompraRequest req) throws Exception {
-        return ResponseEntity.ok(
-                ordenCompraService.anular(req.getCodOc(), req.getPlantillaDTO(), req.getUsuarioExec(), req.getUnidadExec()));
-        //return   ResponseEntity.ok(null);
-    }
-
     /** PATCH /api/ordenes-compra/{id}/confirmar */
     @PostMapping("/ordenes-compra/confirmar")
     public ResponseEntity<PlantillaDTO> confirmar(
@@ -180,6 +182,16 @@ public class OrdenCompraController {
         return ResponseEntity.ok(
                 ordenCompraService.confirmar(req.getCodOc(), req.getPlantillaDTO(), req.getUsuarioExec(), req.getUnidadExec()));
     }
+
+    /** PATCH /api/ordenes-compra/{id}/anular */
+    @PostMapping("/ordenes-compra/anular")
+    public ResponseEntity<PlantillaDTO> anular(
+            @RequestBody OrdenCompraRequest req) throws Exception {
+        return ResponseEntity.ok(
+                ordenCompraService.anular(req.getCodOc(), req.getPlantillaDTO(), req.getUsuarioExec(), req.getUnidadExec()));
+    }
+
+
 
     /** PATCH /api/ordenes-compra/{id}/confirmar */
     @PostMapping("/ordenes-compra/generar-documento-oc")
@@ -225,6 +237,32 @@ public class OrdenCompraController {
         );
         //return   ResponseEntity.ok(null);
         return ResponseEntity.ok(resultados);
+    }
+
+    @GetMapping("/ordenes-compra/exportar-excel")
+    public void exportarExcel(
+            @RequestParam(required = false) String codEstadoOc,
+            @RequestParam(required = false) String rut,
+            @RequestParam(required = false) String unidad,
+            @RequestParam(required = false) String codOrdenCompra,
+            @RequestParam(required = false) String fechaInicioStr,
+            @RequestParam(required = false) String fechaFinStr,
+            @RequestParam(required = false) String desde,
+            @RequestParam(required = false) String hasta,
+            HttpServletResponse response) throws IOException {
+
+        // 1. Configurar las cabeceras de la respuesta HTTP para descarga de Excel
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        String headerKey = "Content-Disposition";
+        String headerValue = "attachment; filename=Ordenes_De_Compra_CCM.xlsx";
+        response.setHeader(headerKey, headerValue);
+
+        // 2. Llamar al servicio encargado de recolectar los datos y escribir el binario
+        ordenCompraService.exportarOrdenesCompraExcel(
+                codEstadoOc, rut, unidad, codOrdenCompra,
+                fechaInicioStr, fechaFinStr, desde, hasta,
+                response
+        );
     }
 
     /****************** Archivos Adjuntos a OC ****************/
@@ -321,7 +359,6 @@ public class OrdenCompraController {
         PendienteAnulacionDTO pendienteAnulacionDTO = pendienteAnulacionOrdenCompraService.guardarPendienteAnulacionOrdenCompra(pendienteAnulacionOrdenCompraRequest);
 
         return ResponseEntity.status(HttpStatus.OK).body(pendienteAnulacionDTO);
-
     }
 
     @GetMapping("/ordenes-compra/pendiente-anulacion")
@@ -331,20 +368,28 @@ public class OrdenCompraController {
         PendienteAnulacionDTO pendienteAnulacionDTO = pendienteAnulacionOrdenCompraService.obtenerPendienteAnulacionOrdenCompra(codOrdenCompra);
 
         return ResponseEntity.status(HttpStatus.OK).body(pendienteAnulacionDTO);
-
     }
 
     @GetMapping("/ordenes-compra/reportes/gastos-unidad")
-    public ResponseEntity<List<ReporteGastoUnidadDto>> getGastosPorUnidad(
-            @RequestParam(value = "mesesAtras", required = false) Integer mesesAtras) {
+    public ResponseEntity<byte[]> getGastosPorUnidad(
+            @RequestParam(required = false) String fechaInicioStr,
+            @RequestParam(required = false) String fechaFinStr) throws Exception {
 
-        List<ReporteGastoUnidadDto> reporte = ordenCompraService.obtenerGastosPorPeriodo(mesesAtras);
+        byte[] reporte = ordenCompraService.obtenerGastosPorPeriodo(fechaInicioStr, fechaFinStr);
 
-        if (reporte.isEmpty()) {
+        if (reporte.length==0) {
             return ResponseEntity.noContent().build(); // Retorna 204 si no hay registros en ese mes
         }
 
-        return ResponseEntity.ok(reporte); // Retorna 200 con el JSON estructurado
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        String filename = "reporte".concat("_").concat(fechaInicioStr).concat("_").concat(fechaFinStr);
+
+        headers.setContentDispositionFormData("attachment", filename);
+        headers.add("Access-Control-Expose-Headers", "Content-Disposition");
+        headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
+
+        return new ResponseEntity<>(reporte, headers, HttpStatus.OK);
     }
 }
 

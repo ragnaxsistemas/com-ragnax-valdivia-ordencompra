@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Gestión - Órdenes de Compra</title>
+    <!-- Tailwind CSS configurado para emular tus estilos de registros.css -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ccmCyan: '#3FA7BC' // El cyan turquesa institucional para líneas y detalles
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-white text-black min-h-screen p-6 font-sans">
+
+<div class="max-w-7xl mx-auto">
+
+    <!-- ENCABEZADO DE REPORTE -->
+    <div class="flex items-center gap-3 mb-6 border-b-2 border-slate-100 pb-4">
+        <svg class="w-8 h-8 text-ccmCyan" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path>
+        </svg>
+        <h1 class="text-2xl font-bold uppercase tracking-wide text-ccmCyan">
+            Reporte de Gasto por Rango de Tiempo
+        </h1>
+    </div>
+
+    <!-- FILTRO INFORMATIVO -->
+    <div class="border border-ccmCyan rounded-lg p-5 bg-white mb-8 shadow-sm">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-bold uppercase text-black">
+            <div>
+                <span class="block text-black mb-1">RANGO DE FECHAS CONSULTADO</span>
+                <div class="flex items-center gap-2">
+                    <span class="border border-slate-300 rounded px-3 py-1.5 font-mono text-sm bg-slate-50
+                    text-black">{{FECHA_INICIAL}}</span>
+                    <span class="text-slate-400">-</span>
+                    <span class="border border-slate-300 rounded px-3 py-1.5 font-mono text-sm bg-slate-50
+                     text-black">{{FECHA_FINAL}}</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- LISTADO DE REPORTES POR UNIDAD -->
+    <main class="space-y-10">
+
+        <!-- BLOQUE DE UNIDAD -->
+        <div class="border border-slate-300 rounded-lg overflow-hidden shadow-sm bg-white">
+
+            <!-- Barra superior de la Unidad -->
+            <div class="bg-slate-50 px-5 py-3 border-b border-slate-200 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-black uppercase">UNIDAD REQUIRENTE:</span>
+                    <span class="border border-ccmCyan font-bold text-xs uppercase px-3 py-1 rounded bg-white tracking-wide text-black">
+                            {{GRP_UNIDAD_REQUIRIENTE}}
+                        </span>
+                </div>
+            </div>
+
+            <!-- CONTENEDOR DE ESTADOS DENTRO DE ESTA UNIDAD -->
+            <div class="p-5 space-y-8">
+                <!-- SECCIÓN ESTADO: AUTORIZADA -->
+                <div>
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-black">Estado: {{GRP_ESTADO_OC}}</h3>
+                    </div>
+
+                    <!-- TABLA DE REGISTROS -->
+                    <div class="border border-ccmCyan/60 rounded overflow-hidden">
+                        <table class="min-w-full text-left text-xs font-bold">
+                            <thead class="border-b border-ccmCyan/60 text-black uppercase bg-white">
+                            <tr>
+                                <th class="px-4 py-3 font-bold">FOLIO</th>
+                                <th class="px-4 py-3 font-bold">FECHA</th>
+                                <th class="px-4 py-3 font-bold">GLOSA / DESCRIPCIÓN</th>
+                                <th class="px-4 py-3 font-bold text-right">MONTO TOTAL</th>
+                            </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 bg-white text-black">
+                            <tr class="hover:bg-slate-50/80 transition-colors">
+                                <td class="px-4 py-3.5">{{FOLIO_OC}}</td>
+                                <td class="px-4 py-3.5 font-normal">{{FECHA_OC}}</td>
+                                <td class="px-4 py-3.5 font-normal">{{NOMBRE_OC}}</td>
+                                <td class="px-4 py-3.5 text-right font-bold text-black">$ {{TOTAL_OC}}</td>
+                            </tr>
+                            </tbody>
+                            <tfoot class="bg-slate-50 border-t border-slate-200 text-black">
+                            <tr>
+                                <td colspan="3" class="px-4 py-2.5 text-right font-bold text-xs uppercase tracking-wider">Total Autorizadas:</td>
+                                <td class="px-4 py-2.5 text-right font-black text-sm border-l border-slate-200 bg-slate-100/50 text-black">$ {{GRP_TOTAL_OC}}</td>
+                            </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+</body>
+</html>

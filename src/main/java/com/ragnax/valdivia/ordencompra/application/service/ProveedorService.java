@@ -111,7 +111,7 @@ public class ProveedorService {
 
     public ProveedorDTO crear(ProveedorDTO dto) {
 
-        Optional<Proveedor> optProv  = proveedorRepository.findByRutProveedor(Utilidades.formatearRut(dto.getRutProveedor()));
+        Optional<Proveedor> optProv  = proveedorRepository.findByRutProveedor(Utilidades.formatearRut(Utilidades.limpiarRut(dto.getRutProveedor())));
 
         if(optProv.isPresent()) {
             throw new RuntimeException("ya existe Proveedor con rut: " + dto.getRutProveedor());

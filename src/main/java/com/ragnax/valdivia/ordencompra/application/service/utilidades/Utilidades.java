@@ -6,6 +6,22 @@ import java.util.zip.CRC32;
 
 public class Utilidades {
 
+    public static String limpiarRut(String rutInvalido) {
+        if (rutInvalido == null || rutInvalido.isBlank()) {
+            throw new IllegalArgumentException("RUT no puede ser vacío");
+        }
+
+        // 1. Quita espacios, pasa a mayúsculas y elimina todo lo que no sea número o K
+        String rutLimpio = rutInvalido.trim().toUpperCase().replaceAll("[^0-9K]", "");
+
+        // 2. Validación mínima (un RUT chileno necesita al menos el cuerpo y el DV)
+        if (rutLimpio.length() < 2) {
+            throw new IllegalArgumentException("RUT inválido: " + rutInvalido);
+        }
+
+        return rutLimpio;
+    }
+
     public static String formatearRut(String rutLimpio) {
         if (rutLimpio == null || rutLimpio.isBlank()) {
             throw new IllegalArgumentException("RUT no puede ser vacío");
@@ -34,7 +50,6 @@ public class Utilidades {
 
         return cuerpoFormateado + "-" + dv;
     }
-
 
     public static String generarCodigo(Integer idOrdenCompra) {
         if (idOrdenCompra == null) {

@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ragnax.valdivia.ordencompra.application.service.model.OrdenCompraHtml;
 import com.ragnax.valdivia.ordencompra.infraestructura.controller.dto.ItemAngular;
 import com.ragnax.valdivia.ordencompra.infraestructura.controller.dto.PlantillaStatusImpresionDTO;
-import com.ragnax.valdivia.ordencompra.infraestructura.controller.dto.ProductoDTO;
+import com.ragnax.valdivia.ordencompra.infraestructura.entity.OrdenCompraConfirmada;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -14,8 +14,8 @@ import java.util.List;
 
 public class PlantillaOrdenCompra {
 
-    public static String generarPlantillaConfirmada(OrdenCompraHtml ordenCompraHtml,
-                                                            PlantillaStatusImpresionDTO plantillaStatusImpresionDTO) throws JsonProcessingException {
+    public static String generarPlantilla(OrdenCompraHtml ordenCompraHtml,
+                                          OrdenCompraConfirmada occ) throws JsonProcessingException {
 
         //Escudo
         String imgTag1 = "<img src='data:image/png;base64," + ordenCompraHtml.getListImagesBase64().get(0) + "' style='width: 120px; height: auto;'/>";
@@ -24,7 +24,7 @@ public class PlantillaOrdenCompra {
 
         String imgTag3 = "<img src='data:image/png;base64," + ordenCompraHtml.getListImagesBase64().get(2) + "' style='width: 60px; height: auto;'/>";
 
-        String htmlReemplazado = ordenCompraHtml.getHtml().replace("{{FOLIO_OC}}", plantillaStatusImpresionDTO.getCodOrdenCompra());
+        String htmlReemplazado = ordenCompraHtml.getHtml().replace("{{FOLIO_OC}}", occ.getCodigoOrdenCompra());
 
         htmlReemplazado = htmlReemplazado.replace("{{LOGO_OC_CCM}}", imgTag1);
 
@@ -32,45 +32,49 @@ public class PlantillaOrdenCompra {
 
         htmlReemplazado = htmlReemplazado.replace("{{TIMBRE_GERENCIA}}", imgTag3);
         
-        htmlReemplazado = htmlReemplazado.replace("{{FECHA_CREACION_OC}}", formatearFecha(plantillaStatusImpresionDTO.getFechaOrdenCompra()));
+        htmlReemplazado = htmlReemplazado.replace("{{FECHA_CREACION_OC}}", formatearFecha(occ.getFechaEmision()));
 
-        htmlReemplazado = htmlReemplazado.replace("{{UNIDAD_COMPRADORA_OC}}", plantillaStatusImpresionDTO.getNombreUnidad());
+        htmlReemplazado = htmlReemplazado.replace("{{UNIDAD_COMPRADORA_OC}}", occ.getNombreUnidad());
 
-        htmlReemplazado = htmlReemplazado.replace("{{AUTORIZADOR_OC}}", plantillaStatusImpresionDTO.getUsuarioAutorizador());
+        htmlReemplazado = htmlReemplazado.replace("{{AUTORIZADOR_OC}}", occ.getNombreUsuarioAutorizador());
 
-        htmlReemplazado = htmlReemplazado.replace("{{CONFIRMADOR_OC}}", plantillaStatusImpresionDTO.getUsuarioConfirmador());
+        if(ordenCompraHtml.getTipo().equals("1")){
+            htmlReemplazado = htmlReemplazado.replace("{{CONFIRMADOR_OC}}", occ.getNombreUsuarioConfirmador());
+        }else if(ordenCompraHtml.getTipo().equals("2")){
+            htmlReemplazado = htmlReemplazado.replace("{{ANULADOR_OC}}", occ.getNombreUsuarioAnulador());
+        }
 
-        htmlReemplazado = htmlReemplazado.replace("{{NOMBRE_PROVEEDOR_OC}}", plantillaStatusImpresionDTO.getNombreProveedor());
 
-        htmlReemplazado = htmlReemplazado.replace("{{RUT_PROVEEDOR_OC}}", formatearRut(plantillaStatusImpresionDTO.getRutProveedor()));
+        htmlReemplazado = htmlReemplazado.replace("{{NOMBRE_PROVEEDOR_OC}}", occ.getNombreProveedor());
 
-        htmlReemplazado = htmlReemplazado.replace("{{DIRECCION_PROVEEDOR_OC}}", plantillaStatusImpresionDTO.getDireccionProveedor());
+        htmlReemplazado = htmlReemplazado.replace("{{RUT_PROVEEDOR_OC}}", occ.getRutProveedor());
 
-        htmlReemplazado = htmlReemplazado.replace("{{COMUNA_PROVEEDOR_OC}}", plantillaStatusImpresionDTO.getNombreComunaProveedor());
+        htmlReemplazado = htmlReemplazado.replace("{{DIRECCION_PROVEEDOR_OC}}", occ.getDireccionProveedor());
 
-        htmlReemplazado = htmlReemplazado.replace("{{REGION_PROVEEDOR_OC}}", plantillaStatusImpresionDTO.getNombreRegionProveedor());
+        htmlReemplazado = htmlReemplazado.replace("{{COMUNA_PROVEEDOR_OC}}", occ.getNombreComunaProveedor());
 
-        htmlReemplazado = htmlReemplazado.replace("{{GIRO_PROVEEDOR_OC}}", plantillaStatusImpresionDTO.getGiroProveedor());
+        htmlReemplazado = htmlReemplazado.replace("{{REGION_PROVEEDOR_OC}}", occ.getNombreRegionProveedor());
 
-        htmlReemplazado = htmlReemplazado.replace("{{FONO_PROVEEDOR_OC}}", plantillaStatusImpresionDTO.getTelefonoContactoProveedor());
+        htmlReemplazado = htmlReemplazado.replace("{{GIRO_PROVEEDOR_OC}}", occ.getNombreGiroProveedor());
 
-        htmlReemplazado = htmlReemplazado.replace("{{FONO_PROVEEDOR_OC}}", plantillaStatusImpresionDTO.getEmailProveedor());
+        htmlReemplazado = htmlReemplazado.replace("{{FONO_PROVEEDOR_OC}}", occ.getTelefonoContactoProveedor());
 
-        htmlReemplazado = htmlReemplazado.replace("{{EMAIL_PROVEEDOR_OC}}", plantillaStatusImpresionDTO.getEmailProveedor());
 
-        htmlReemplazado = htmlReemplazado.replace("{{NOMBRE_OC}}", plantillaStatusImpresionDTO.getNombreOrdenCompra());
+        htmlReemplazado = htmlReemplazado.replace("{{EMAIL_PROVEEDOR_OC}}", occ.getEmailProveedor());
 
-        htmlReemplazado = htmlReemplazado.replace("{{OBSERVACIONES_OC}}", plantillaStatusImpresionDTO.getObservaciones());
+        htmlReemplazado = htmlReemplazado.replace("{{NOMBRE_OC}}", occ.getNombreOrdenCompra());
+
+        htmlReemplazado = htmlReemplazado.replace("{{OBSERVACIONES_OC}}", occ.getObservaciones());
 
         htmlReemplazado = htmlReemplazado.replace("{{PLAZO}}", "CREDITO A 30 DIAS");
 
-        htmlReemplazado = htmlReemplazado.replace("{{TABLA_PRODUCTOS_OC}}", stringAppendTable(plantillaStatusImpresionDTO.getListProductosOrden()));
+        htmlReemplazado = htmlReemplazado.replace("{{TABLA_PRODUCTOS_OC}}", stringAppendTable(occ.getListProductosOrden()));
 
         java.text.NumberFormat formaterClp = java.text.NumberFormat.getCurrencyInstance(new java.util.Locale("es", "CL"));
         formaterClp.setMaximumFractionDigits(0);
 
-        if(plantillaStatusImpresionDTO.getCodDocumentoTributario() .equalsIgnoreCase("38") ||
-                plantillaStatusImpresionDTO.getCodDocumentoTributario() .equalsIgnoreCase("38-c")){
+        if(occ.getCodigoDocumentoTributario() .equalsIgnoreCase("38") ||
+                occ.getCodigoDocumentoTributario() .equalsIgnoreCase("38-c")){
             htmlReemplazado = htmlReemplazado.replace("{{TITULO_NETO_OC}}", "MONTO TOTAL");
             htmlReemplazado = htmlReemplazado.replace("{{TITULO_IMPUESTO_OC}}", "RETENCIÓN");
             htmlReemplazado = htmlReemplazado.replace("{{TITULO_TOTAL_OC}}", "VALOR LÍQUIDO");
@@ -80,9 +84,9 @@ public class PlantillaOrdenCompra {
             htmlReemplazado = htmlReemplazado.replace("{{TITULO_TOTAL_OC}}", "TOTAL");
         }
 
-        htmlReemplazado = htmlReemplazado.replace("{{VALOR_TOTAL_NETO_OC}}", formaterClp.format(plantillaStatusImpresionDTO.getTotalNeto()));
-        htmlReemplazado = htmlReemplazado.replace("{{VALOR_IMPUESTO_OC}}", formaterClp.format(plantillaStatusImpresionDTO.getImpuesto()));
-        htmlReemplazado = htmlReemplazado.replace("{{VALOR_TOTAL_OC}}", formaterClp.format(plantillaStatusImpresionDTO.getTotal()));
+        htmlReemplazado = htmlReemplazado.replace("{{VALOR_TOTAL_NETO_OC}}", occ.getTotalNeto());
+        htmlReemplazado = htmlReemplazado.replace("{{VALOR_IMPUESTO_OC}}", occ.getImpuesto());
+        htmlReemplazado = htmlReemplazado.replace("{{VALOR_TOTAL_OC}}", occ.getTotal());
 
         return htmlReemplazado;
     }
@@ -144,78 +148,6 @@ public class PlantillaOrdenCompra {
         }***/
 
         return filasHtml.toString();
-    }
-
-    public static String generarPlantillaAnulado(OrdenCompraHtml ordenCompraHtml,
-                                                    PlantillaStatusImpresionDTO plantillaStatusImpresionDTO) throws JsonProcessingException {
-        //Escudo
-        String imgTag1 = "<img src='data:image/png;base64," + ordenCompraHtml.getListImagesBase64().get(0) + "' style='width: 120px; height: auto;'/>";
-
-        String imgTag2 = "<img src='data:image/png;base64," + ordenCompraHtml.getListImagesBase64().get(1) + "' style='width: 60px; height: auto;'/>";
-
-        String imgTag3 = "<img src='data:image/png;base64," + ordenCompraHtml.getListImagesBase64().get(2) + "' style='width: 60px; height: auto;'/>";
-
-        String htmlReemplazado = ordenCompraHtml.getHtml().replace("{{FOLIO_OC}}", plantillaStatusImpresionDTO.getCodOrdenCompra());
-
-        htmlReemplazado = htmlReemplazado.replace("{{LOGO_OC_CCM}}", imgTag1);
-
-        htmlReemplazado = htmlReemplazado.replace("{{TIMBRE_CONTABILIDAD}}", imgTag2);
-
-        htmlReemplazado = htmlReemplazado.replace("{{TIMBRE_GERENCIA}}", imgTag3);
-
-        htmlReemplazado = htmlReemplazado.replace("{{FECHA_CREACION_OC}}", formatearFecha(plantillaStatusImpresionDTO.getFechaOrdenCompra()));
-
-        htmlReemplazado = htmlReemplazado.replace("{{UNIDAD_COMPRADORA_OC}}", plantillaStatusImpresionDTO.getNombreUnidad());
-
-        htmlReemplazado = htmlReemplazado.replace("{{AUTORIZADOR_OC}}", plantillaStatusImpresionDTO.getUsuarioAutorizador());
-
-        htmlReemplazado = htmlReemplazado.replace("{{ANULADOR_OC}}", plantillaStatusImpresionDTO.getUsuarioAnulador());
-
-        htmlReemplazado = htmlReemplazado.replace("{{NOMBRE_PROVEEDOR_OC}}", plantillaStatusImpresionDTO.getNombreProveedor());
-
-        htmlReemplazado = htmlReemplazado.replace("{{RUT_PROVEEDOR_OC}}", formatearRut(plantillaStatusImpresionDTO.getRutProveedor()));
-
-        htmlReemplazado = htmlReemplazado.replace("{{DIRECCION_PROVEEDOR_OC}}", plantillaStatusImpresionDTO.getDireccionProveedor());
-
-        htmlReemplazado = htmlReemplazado.replace("{{COMUNA_PROVEEDOR_OC}}", plantillaStatusImpresionDTO.getNombreComunaProveedor());
-
-        htmlReemplazado = htmlReemplazado.replace("{{REGION_PROVEEDOR_OC}}", plantillaStatusImpresionDTO.getNombreRegionProveedor());
-
-        htmlReemplazado = htmlReemplazado.replace("{{GIRO_PROVEEDOR_OC}}", plantillaStatusImpresionDTO.getGiroProveedor());
-
-        htmlReemplazado = htmlReemplazado.replace("{{FONO_PROVEEDOR_OC}}", plantillaStatusImpresionDTO.getTelefonoContactoProveedor());
-
-        htmlReemplazado = htmlReemplazado.replace("{{FONO_PROVEEDOR_OC}}", plantillaStatusImpresionDTO.getEmailProveedor());
-
-        htmlReemplazado = htmlReemplazado.replace("{{EMAIL_PROVEEDOR_OC}}", plantillaStatusImpresionDTO.getEmailProveedor());
-
-        htmlReemplazado = htmlReemplazado.replace("{{NOMBRE_OC}}", plantillaStatusImpresionDTO.getNombreOrdenCompra());
-
-        htmlReemplazado = htmlReemplazado.replace("{{OBSERVACIONES_OC}}", plantillaStatusImpresionDTO.getObservaciones());
-
-        htmlReemplazado = htmlReemplazado.replace("{{PLAZO}}", "CREDITO A 30 DIAS");
-
-        htmlReemplazado = htmlReemplazado.replace("{{TABLA_PRODUCTOS_OC}}", stringAppendTable(plantillaStatusImpresionDTO.getListProductosOrden()));
-
-        java.text.NumberFormat formaterClp = java.text.NumberFormat.getCurrencyInstance(new java.util.Locale("es", "CL"));
-        formaterClp.setMaximumFractionDigits(0);
-
-        if (plantillaStatusImpresionDTO.getCodDocumentoTributario().equalsIgnoreCase("38") ||
-                plantillaStatusImpresionDTO.getCodDocumentoTributario().equalsIgnoreCase("38-c")) {
-            htmlReemplazado = htmlReemplazado.replace("{{TITULO_NETO_OC}}", "MONTO TOTAL");
-            htmlReemplazado = htmlReemplazado.replace("{{TITULO_IMPUESTO_OC}}", "RETENCIÓN");
-            htmlReemplazado = htmlReemplazado.replace("{{TITULO_TOTAL_OC}}", "VALOR LÍQUIDO");
-        } else {
-            htmlReemplazado = htmlReemplazado.replace("{{TITULO_NETO_OC}}", "TOTAL NETO");
-            htmlReemplazado = htmlReemplazado.replace("{{TITULO_IMPUESTO_OC}}", "IMPUESTO");
-            htmlReemplazado = htmlReemplazado.replace("{{TITULO_TOTAL_OC}}", "TOTAL");
-        }
-
-        htmlReemplazado = htmlReemplazado.replace("{{VALOR_TOTAL_NETO_OC}}", formaterClp.format(plantillaStatusImpresionDTO.getTotalNeto()));
-        htmlReemplazado = htmlReemplazado.replace("{{VALOR_IMPUESTO_OC}}", formaterClp.format(plantillaStatusImpresionDTO.getImpuesto()));
-        htmlReemplazado = htmlReemplazado.replace("{{VALOR_TOTAL_OC}}", formaterClp.format(plantillaStatusImpresionDTO.getTotal()));
-
-        return htmlReemplazado;
     }
 
     public static String formatearRut(String rut) {

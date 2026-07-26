@@ -10,11 +10,11 @@ import java.io.Serializable;
 @NoArgsConstructor
 public class ReporteGastoUnidadDto implements Serializable {
 
-    private Integer codigoUnidad;
-    private String tipoDocumento;
-    private Long totalOrdenesEmitidas;
-    private Long inversionTotalNeta;
-    private Long inversionTotalConImpuesto;
+    private Integer idUnidad;
+    private String qAutorizadas;
+    private Long qConfirmadas;
+    private Long qAnuladas;
+    private Long gastoTotalUnidad;
     
     
 }

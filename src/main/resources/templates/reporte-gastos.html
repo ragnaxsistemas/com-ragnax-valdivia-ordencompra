@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Reporte de Gestión - Órdenes de Compra</title>
+    <style>
+        /* Reglas de Paginación para OpenHTMLtoPDF */
+        @page {
+            size: letter portrait;
+            margin: 15mm 10mm 15mm 10mm;
+            @bottom-right {
+                content: "Página " counter(page) " de " counter(pages);
+                font-family: 'Helvetica Neue', Arial, sans-serif;
+                font-size: 8pt;
+                color: #64748B;
+            }
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            font-size: 10px;
+            color: #000000;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Estilos base conversionales de Tailwind a CSS Puro */
+        .text-ccmCyan { color: #3FA7BC; }
+        .border-ccmCyan { border: 1px solid #3FA7BC; }
+
+        /* Encabezado */
+        .header-title {
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #3FA7BC;
+            border-bottom: 2px solid #F1F5F9;
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+        }
+
+        /* Filtro */
+        .box-filtro {
+            border: 1px solid #3FA7BC;
+            border-radius: 6px;
+            padding: 12px;
+            background-color: #ffffff;
+            margin-bottom: 20px;
+        }
+
+        .fecha-pill {
+            border: 1px solid #CBD5E1;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-family: monospace;
+            font-size: 11px;
+            background-color: #F8FAFC;
+        }
+
+        /* Contenedores de Unidad */
+        .card-unidad {
+            border: 1px solid #CBD5E1;
+            border-radius: 6px;
+            background-color: #ffffff;
+            margin-bottom: 24px;
+            page-break-inside: auto;
+        }
+
+        .bar-unidad {
+            background-color: #F8FAFC;
+            padding: 8px 16px;
+            border-bottom: 1px solid #E2E8F0;
+            page-break-after: avoid; /* No deja la barra huérfana al final de hoja */
+        }
+
+        .pill-unidad {
+            border: 1px solid #3FA7BC;
+            font-weight: bold;
+            font-size: 10px;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: 4px;
+            background-color: #ffffff;
+        }
+
+        /* Secciones por Estado */
+        .bloque-estado {
+            padding: 12px 16px;
+            page-break-inside: auto;
+        }
+
+        .titulo-estado {
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            page-break-after: avoid;
+        }
+
+        /* Tablas */
+        .tabla-container {
+            border: 1px solid rgba(63, 167, 188, 0.6);
+            border-radius: 4px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 10px;
+        }
+
+        thead { display: table-header-group; } /* Repite cabecera al saltar de página */
+        tfoot { display: table-footer-group; }
+
+        th {
+            border-bottom: 1px solid rgba(63, 167, 188, 0.6);
+            color: #000000;
+            text-transform: uppercase;
+            font-weight: bold;
+            padding: 8px;
+        }
+
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #F1F5F9;
+            color: #000000;
+        }
+
+        tr { page-break-inside: avoid; } /* Evita cortar filas horizontalmente */
+
+        .text-right { text-align: right; }
+        .font-bold { font-weight: bold; }
+
+        .tfoot-total {
+            background-color: #F8FAFC;
+            border-top: 1px solid #E2E8F0;
+        }
+    </style>
+</head>
+<body>
+
+<div>
+
+    <!-- ENCABEZADO DE REPORTE -->
+    <div class="header-title">
+        Reporte de Gasto por Rango de Tiempo
+    </div>
+
+    <!-- FILTRO INFORMATIVO -->
+    <div class="box-filtro">
+        <span style="font-size: 9px; font-weight: bold; text-transform: uppercase;">RANGO DE FECHAS CONSULTADO: </span>
+        <span class="fecha-pill" th:text="${fechaInicio}">01/04/2026</span>
+        <span style="color: #94A3B8;"> - </span>
+        <span class="fecha-pill" th:text="${fechaFin}">19/07/2026</span>
+    </div>
+
+    <!-- LISTADO DE REPORTES POR UNIDAD -->
+    <main>
+
+        <!-- Iteración del primer nivel del Map (Unidad) -->
+        <div th:each="unidadEntry : ${agrupadoPorUnidadYEstado}" class="card-unidad">
+
+            <!-- Barra superior de la Unidad -->
+            <div class="bar-unidad">
+                <span style="font-size: 9px; font-weight: bold; text-transform: uppercase;">UNIDAD REQUIRENTE: </span>
+                <!-- Toma el primer estado (.values()[0]), luego la primera OC ([0]) y obtiene su nombreUnidad -->
+                <span class="pill-unidad"
+                      th:text="${unidadEntry.value.values()[0][0].nombreUnidad}">
+                    CCM VALDIVIA PROCELLE
+                </span>
+             </div>
+
+            <!-- Iteración del segundo nivel del Map (Estado) -->
+            <div th:each="estadoEntry : ${unidadEntry.value}" class="bloque-estado">
+
+                <div class="titulo-estado" th:text="'Estado: ' + ${estadoEntry.key}">
+                    Estado: AUTORIZADO
+                </div>
+
+                <!-- TABLA DE REGISTROS -->
+                <div class="tabla-container">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th style="width: 15%;">FOLIO</th>
+                            <th style="width: 15%;">FECHA</th>
+                            <th style="width: 50%;">GLOSA / DESCRIPCIÓN</th>
+                            <th style="width: 20%;" class="text-right">TOTAL</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <!-- Iteración del tercer nivel (Lista de PlantillaStatusDTO) -->
+                        <tr th:each="oc : ${estadoEntry.value}">
+                            <td class="font-bold" th:text="${oc.codOrdenCompra}">OC-000701</td>
+                            <td th:text="${oc.fechaOrdenCompra}">10-07-2026</td>
+                            <td th:text="${oc.nombreOrdenCompra}">Descripción de la OC</td>
+                            <td class="text-right font-bold" th:text="${'$ ' + #numbers.formatInteger(oc.total != null ? oc.total : 0, 1, 'POINT')}">$ 0</td>
+                        </tr>
+                        </tbody>
+                        <tfoot>
+                        <tr class="tfoot-total">
+                            <td colspan="3" class="text-right font-bold" th:text="'Total ' + ${estadoEntry.key} + ':'">Total Autorizadas:</td>
+                            <td class="text-right font-bold"
+                                th:text="${'$ ' + #numbers.formatInteger(#aggregates.sum(estadoEntry.value.![total != null ? total : 0]), 1, 'POINT')}">
+                                $ 0
+                            </td>
+                        </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+</div>
+
+</body>
+</html>

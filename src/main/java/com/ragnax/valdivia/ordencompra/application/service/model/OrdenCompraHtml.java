@@ -12,6 +12,8 @@ import java.util.List;
 @AllArgsConstructor
 public class OrdenCompraHtml implements Serializable {
 
+    private String tipo;
+
     private String html;
 
     private List<String> listImagesBase64;

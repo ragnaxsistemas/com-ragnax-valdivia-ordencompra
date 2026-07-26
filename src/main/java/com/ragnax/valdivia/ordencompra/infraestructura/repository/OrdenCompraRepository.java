@@ -16,9 +16,12 @@ import java.util.Optional;
 @Repository
 public interface OrdenCompraRepository extends JpaRepository<OrdenCompra, Integer> {
 
+    @Query("SELECT MAX(o.idOrdenCompra) FROM OrdenCompra o")
+    Integer findUltimoIdOrdenCompra();
+
     Optional<OrdenCompra> findByCodigoOrdenCompra(String codigoOrdenCompra);
 
-    @Query("SELECT oc FROM OrdenCompra oc " +
+    @Query(value = "SELECT oc FROM OrdenCompra oc " +
             "JOIN oc.proveedor p " +
             "WHERE (:idStatus IS NULL OR EXISTS (" +
             "    SELECT 1 FROM StatusOrdenCompra s " +
@@ -27,27 +30,42 @@ public interface OrdenCompraRepository extends JpaRepository<OrdenCompra, Intege
             "    AND s.fechaEvento = (SELECT MAX(s2.fechaEvento) FROM StatusOrdenCompra s2 WHERE s2.ordenCompra = oc)" +
             ")) " +
             "AND (:rut IS NULL OR REPLACE(REPLACE(p.rutProveedor, '.', ''), '-', '') LIKE CONCAT('%', REPLACE(REPLACE(:rut, '.', ''), '-', ''), '%')) " +
-            //"AND (:nombreProv IS NULL OR UPPER(p.nombreProveedor) LIKE UPPER(CONCAT('%', :nombreProv, '%'))) " +
             "AND (:unidadId IS NULL OR oc.idUnidad = :unidadId) " +
             "AND (:codOrdenCompra IS NULL OR oc.codigoOrdenCompra LIKE CONCAT('%', :codOrdenCompra, '%')) " +
             "AND (:fechaInicio IS NULL OR CAST(oc.fechaCreacion AS date) >= :fechaInicio) " +
             "AND (:fechaFin IS NULL OR CAST(oc.fechaCreacion AS date) <= :fechaFin) " +
-            // 🌟 NUEVO FILTRO: Rango de ID de Orden de Compra (Ambos deben ser obligatorios para aplicar)
-            "AND ((:idMin IS NULL OR :idMax IS NULL) OR (oc.idOrdenCompra BETWEEN :idMin AND :idMax))")
+            "AND ((:idMin IS NULL OR :idMax IS NULL) OR (oc.idOrdenCompra BETWEEN :idMin AND :idMax))",
+            countQuery = "SELECT COUNT(oc) FROM OrdenCompra oc " +
+                    "JOIN oc.proveedor p " +
+                    "WHERE (:idStatus IS NULL OR EXISTS (" +
+                    "    SELECT 1 FROM StatusOrdenCompra s " +
+                    "    WHERE s.ordenCompra = oc " +
+                    "    AND s.estadoOc.idEstadoOc = :idStatus " +
+                    "    AND s.fechaEvento = (SELECT MAX(s2.fechaEvento) FROM StatusOrdenCompra s2 WHERE s2.ordenCompra = oc)" +
+                    ")) " +
+                    "AND (:rut IS NULL OR REPLACE(REPLACE(p.rutProveedor, '.', ''), '-', '') LIKE CONCAT('%', REPLACE(REPLACE(:rut, '.', ''), '-', ''), '%')) " +
+                    "AND (:unidadId IS NULL OR oc.idUnidad = :unidadId) " +
+                    "AND (:codOrdenCompra IS NULL OR oc.codigoOrdenCompra LIKE CONCAT('%', :codOrdenCompra, '%')) " +
+                    "AND (:fechaInicio IS NULL OR CAST(oc.fechaCreacion AS date) >= :fechaInicio) " +
+                    "AND (:fechaFin IS NULL OR CAST(oc.fechaCreacion AS date) <= :fechaFin) " +
+                    "AND ((:idMin IS NULL OR :idMax IS NULL) OR (oc.idOrdenCompra BETWEEN :idMin AND :idMax))")
     Page<OrdenCompra> buscarAvanzado(
             @Param("idStatus") Integer idStatus,
             @Param("rut") String rut,
-            // @Param("nombreProv") String nombreProv,
             @Param("unidadId") Integer unidadId,
             @Param("codOrdenCompra") String codOrdenCompra,
             @Param("fechaInicio") LocalDate fechaInicio,
             @Param("fechaFin") LocalDate fechaFin,
-            @Param("idMin") Long idMin, // 🌟 Parámetro Rango Inferior
-            @Param("idMax") Long idMax, // 🌟 Parámetro Rango Superior
+            @Param("idMin") Long idMin,
+            @Param("idMax") Long idMax,
             Pageable pageable
     );
 
-    @Query(value = "SELECT " +
+    //Seleccionar Fecha Inicio y Fin
+
+
+
+    /***@Query(value = "SELECT " +
             "    oc.id_unidad AS codigoUnidad, " +
             "    dt.nombre_documento_tributario AS tipoDocumento, " +
             "    COUNT(oc.id_orden_compra) AS totalOrdenesEmitidas, " +
@@ -59,5 +77,5 @@ public interface OrdenCompraRepository extends JpaRepository<OrdenCompra, Intege
             "GROUP BY oc.id_unidad, dt.nombre_documento_tributario " +
             "ORDER BY inversionTotalConImpuesto DESC",
             nativeQuery = true)
-    List<ReporteGastoUnidadDto> obtenerReporteGastosPorUnidad(@Param("mesesAtras") Integer mesesAtras);
+    List<ReporteGastoUnidadDto> obtenerReporteGastosPorUnidad(@Param("mesesAtras") Integer mesesAtras);***/
 }
