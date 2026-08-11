@@ -116,6 +116,11 @@ public class ProveedorService {
         if(optProv.isPresent()) {
             throw new RuntimeException("ya existe Proveedor con rut: " + dto.getRutProveedor());
         }
+
+        if(dto.getEmailProveedor()==null || dto.getEmailProveedor().equals("") ) {
+            throw new RuntimeException("ya proveedor sin email: ");
+        }
+
         Proveedor proveedorGuardado = proveedorRepository.save(toEntity(dto));
 
         // 2. Gestionar los Giros en la tabla intermedia

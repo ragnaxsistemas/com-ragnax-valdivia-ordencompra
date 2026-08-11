@@ -57,7 +57,7 @@ public class MailComponent {
             List<Usuarios> listaAdministracionCC = usuariosRepository.findByIdUnidad(setAdministracion);
             List<Usuarios> listaOperadorCC = usuariosRepository.findByIdUnidad(setOperadores);***/
 
-            List<String> listaCopias = Arrays.asList(usuarioSolicitante.getEmailPerfil(), usuarioAutorizador.getEmailPerfil(), usuarioConfirmador.getEmailPerfil());
+            List<String> listaCopias = Arrays.asList(usuarioSolicitante.getEmailPerfil(), usuarioAutorizador.getEmailPerfil(), usuarioConfirmador.getEmailPerfil(), apiProperties.getMailUsername());
 // 2. Unificas los correos de las tres listas en un solo arreglo para BCC (sin duplicados)
             String[] destinatariosCC = Stream.of(listaCopias)
                     .flatMap(List::stream)           // Aplana las 3 listas en un solo flujo de objetos Usuarios

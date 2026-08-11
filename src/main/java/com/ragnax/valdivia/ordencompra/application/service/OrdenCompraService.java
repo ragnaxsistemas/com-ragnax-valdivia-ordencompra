@@ -127,11 +127,22 @@ public class OrdenCompraService {
 
     public PlantillaDTO findUltimoOc() {
 
+        PlantillaDTO plantillaDTO = new PlantillaDTO();
+
         Integer ultimoIdOrdenCompra = ocRepo.findUltimoIdOrdenCompra();
 
         String codigo = Utilidades.generarCodigo(ultimoIdOrdenCompra+1);
 
-        return PlantillaDTO.builder().codOrdenCompra(codigo).build();
+        EstadoOc estadoOc = estadoOcRepository.findByCodigoEstadoOc(COD_STATUS_BORRADOR)
+                .orElseThrow(() -> new IllegalStateException("Status no encontrado: " + COD_STATUS_BORRADOR));
+
+        plantillaDTO.setCodOrdenCompra(codigo);
+        plantillaDTO.setEstadoActualOc(estadoOc.getNombreEstadoOc());
+        plantillaDTO.setCodEstadoActualOc(estadoOc.getCodigoEstadoOc());
+        plantillaDTO.setCodEstadoActualOc(estadoOc.getCodigoEstadoOc());
+
+        return plantillaDTO;
+
     }
     // ─── 1. Guardar (Borrador — estado 1) ─────────────────── //Mandar vacio a Plantilla
     public PlantillaDTO generarOC(PlantillaDTO plantillaDTO, String usernameCreador) {
@@ -156,7 +167,6 @@ public class OrdenCompraService {
                 .total(plantillaDTO.getTotal())
                 /**** **/
                 .idUsuarioCreador(usuario.getIdUsuario())
-
                 .build();
 
         // ── 5. Primer save → BD asigna el ID real (sin condición de carrera) ─
@@ -192,12 +202,15 @@ public class OrdenCompraService {
     public PlantillaStatusDTO guardar(PlantillaDTO plantillaDTO, String usernameGuardar) {
 
         OrdenCompra oc = null;
-        //Usuarios usuario = null;
 
         if(!plantillaDTO.getCodOrdenCompra().equals("")){
-            oc =
-                    ocRepo.findByCodigoOrdenCompra(plantillaDTO.getCodOrdenCompra())
-                            .orElseThrow(() -> new ValdiviaOCException("OC "+plantillaDTO.getCodOrdenCompra() +" no encontrada"));
+            Optional<OrdenCompra> optOrdenCompra =
+                    ocRepo.findByCodigoOrdenCompra(plantillaDTO.getCodOrdenCompra());
+            if(optOrdenCompra.isEmpty()){
+                PlantillaDTO genPlantillaDTO = generarOC(plantillaDTO, usernameGuardar);
+                oc =  ocRepo.findByCodigoOrdenCompra(genPlantillaDTO.getCodOrdenCompra())
+                        .orElseThrow(() -> new ValdiviaOCException("OC "+plantillaDTO.getCodOrdenCompra() +" no encontrada"));
+            }
         }
         validarNoSeBloqueada(oc);
 
